@@ -37,7 +37,7 @@ See [[Pi Atrium Tasks]] for the full task list and [[Pi Atrium PRD]] for require
 
 *(Currently being worked on — keep this lane small)*
 
-- **Phase: Design System** — `design/system/` complete (tokens, 20 components, voice states, empty/loading/error patterns, live examples HTML). Awaiting user review.
+- **Wave 0 / Slice 0.2 — "First agent"** — spawn headless Pi sidecar on app start, show in sidebar. Awaiting Slice 0.1 review.
 
 ## Review / QA
 

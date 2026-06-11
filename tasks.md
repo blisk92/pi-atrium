@@ -209,19 +209,22 @@ Goal: agents can manage their own skill set (and the user can add custom skills)
 
 Goal: user can talk to agents via voice (PTT input + TTS output).
 
-- [ ] **Task 5.1 — "TTS on"** — User enables TTS for concierge, agent's response is spoken
-  - [ ] voice-loop integration: TTS plays via MiniMax speech-2.8-hd (reuses existing extension)
-  - [ ] Per-session TTS toggle (sidebar)
-  - [ ] "Speaking" pill below agent's message with elapsed timer
-  - [ ] User can interrupt (sends next message → TTS stops)
-- [ ] **Task 5.2 — "PTT works"** — User holds Ctrl+Space, records audio, gets transcribed message
+- [x] **Task 5.1 — "TTS on"** ✅ — User enables TTS for a session, agent's response is spoken
+  - [x] Per-session TTS toggle in the sidebar (off by default; on via the speaker icon on a spawned session)
+  - [x] When the agent response completes, the text is sent to TTS provider (`mmx speech synthesize`)
+  - [x] Audio is played in the renderer via `new Audio(file://…)`
+  - [x] IPC: `tts:speak` and `tts:transcribe` (the latter is the STT path for 5.2)
+  - [x] Verified: `mmx` produces a ~15 KB MP3 for a 5-word phrase
+  - [ ] "Speaking" pill below agent's message with elapsed timer — **deferred**
+  - [ ] User can interrupt (sends next message → TTS stops) — **deferred**
+- [ ] **Task 5.2 — "PTT works"** — User holds a hotkey, records audio, gets transcribed message
   - [ ] PTT hotkey handler in main process
   - [ ] Recording indicator in chat pane (waveform + elapsed)
-  - [ ] local Whisper transcription on release
-  - [ ] Transcribed text appears as user message
+  - [ ] MediaRecorder in renderer captures audio; STT via `mmx speech transcribe` (IPC already wired)
+  - [ ] Transcribed text appears in the chat input
   - [ ] Mic permission flow (first-use prompt)
 - [ ] **Task 5.3 — "Voice round-trip"** — PTT → concierge responds via voice → first-token < 2s
-  - [ ] E2E: hold Ctrl+Space, speak "what's the weather", release, hear response
+  - [ ] E2E: record → transcribe → send → agent response → TTS
   - [ ] Latency benchmark for full voice round-trip
   - [ ] Error states: no mic, no permission, transcription failure (each with toast)
 

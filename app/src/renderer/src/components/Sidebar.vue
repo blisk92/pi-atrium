@@ -165,28 +165,6 @@ function statusPillClass(s: string): string {
           <span :class="statusPillClass(t.status)">{{ t.status }}</span>
         </div>
         <div v-if="expandedTeams.has(t.id)" class="team-body">
-          <div
-            v-for="m in t.members"
-            :key="m.id"
-            class="team-member"
-            :class="{ 'member-active': m.status === 'active' }"
-            @click="m.sessionId && sessions.select(m.sessionId)"
-          >
-            <span
-              class="status-dot"
-              :class="{
-                'dot-idle': m.status === 'draft',
-                'dot-starting': m.status === 'starting',
-                'dot-active': m.status === 'active',
-                'dot-error': m.status === 'error',
-              }"
-            ></span>
-            <div class="member-info">
-              <div class="member-name">{{ m.name }}</div>
-              <div class="member-role">{{ m.role }}</div>
-            </div>
-            <span v-if="m.port" class="member-port">{{ m.port }}</span>
-          </div>
           <div class="team-actions">
             <button
               v-if="t.status === 'draft' || t.status === 'error' || t.status === 'stopped'"

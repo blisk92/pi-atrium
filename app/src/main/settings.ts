@@ -42,10 +42,46 @@ export async function writeSettings(s: Settings): Promise<void> {
 export async function pickVaultFolder(): Promise<string | null> {
   const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0]
   if (!win) return null
+  // defaultPath: open at the user's home so the dialog starts fresh,
+  // not at a stale recent path that may have been moved/deleted
+  // (which previously surfaced as 'Windows cannot access' errors).
   const r = await dialog.showOpenDialog(win, {
-    title: 'Pick your Obsidian vault folder',
+    title: 'Pick your Obsidian vault folder (the one with the .obsidian subfolder)',
+    defaultPath: app.getPath('home'),
     properties: ['openDirectory'],
   })
   if (r.canceled || r.filePaths.length === 0) return null
   return r.filePaths[0] || null
+}
+
+/**
+ * Validate that the chosen path is a real, accessible directory that
+ * looks like an Obsidian vault (has a .obsidian/ subfolder or
+ * obsidian.json). Returns a human-readable reason if not, or null if OK.
+ */
+export async function validateVault(p: string): Promise<string | null> {
+  if (!p) return 'No path provided.'
+  let st: import('node:fs').Stats
+  try {
+    st = await fs.stat(p)
+  } catch {
+    return `Path is not accessible: ${p}`
+  }
+  if (!st.isDirectory()) return 'Path is not a directory.'
+  // Heuristic: a real Obsidian vault has a .obsidian folder
+  // (.obsidian/obsidian.json) OR an obsidian.json at the root
+  // (for newer plugin-injected vaults).
+  try {
+    await fs.access(path.join(p, '.obsidian'))
+    return null
+  } catch {
+    /* fall through */
+  }
+  try {
+    await fs.access(path.join(p, 'obsidian.json'))
+    return null
+  } catch {
+    /* fall through */
+  }
+  return 'No .obsidian folder found. Pick the vault itself (the folder that contains .obsidian/), not its parent.'
 }

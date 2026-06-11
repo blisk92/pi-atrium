@@ -90,6 +90,7 @@ interface PiAtriumAPI {
     get: () => Promise<unknown>
     set: (s: unknown) => Promise<{ ok: boolean }>
     pickFolder: () => Promise<string | null>
+    validateVault: (p: string) => Promise<string | null>
   }
 }
 

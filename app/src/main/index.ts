@@ -29,7 +29,7 @@ import {
 } from './brain.js'
 import { synthesizeSpeech, transcribeAudio } from './tts.js'
 import { readTree, type FileNode } from './files.js'
-import { readSettings, writeSettings, pickVaultFolder } from './settings.js'
+import { readSettings, writeSettings, pickVaultFolder, validateVault } from './settings.js'
 import type { Team } from '../shared/types.js'
 // Note: readBrain/addBrainEntry/searchBrain are used by the Wave 3 IPC handlers
 void readBrain; void addBrainEntry; void searchBrain; void (null as unknown as BrainState)
@@ -836,6 +836,7 @@ app.whenReady().then(async () => {
     return { ok: true }
   })
   ipcMain.handle('settings:pickFolder', () => pickVaultFolder())
+  ipcMain.handle('settings:validateVault', (_evt, p: string) => validateVault(p))
 
   // --- File tree (Wave 6 / Task 6.1) ---
   ipcMain.handle('fs:readTree', async (_evt, arg: string) => {

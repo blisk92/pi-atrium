@@ -61,9 +61,34 @@ async function pickFolder(): Promise<void> {
   const api = window.piAtrium as any
   if (api?.settings?.pickFolder) {
     const p = await api.settings.pickFolder()
-    if (p) settings.vaultPath = p
+    if (!p) return
+    settings.vaultPath = p
+    vaultError.value = null
+    // Validate the picked path
+    if (api.settings.validateVault) {
+      const err = await api.settings.validateVault(p)
+      vaultError.value = err
+    }
   }
 }
+
+const vaultError = ref<string | null>(null)
+const vaultOk = ref(false)
+
+watch(
+  () => settings.vaultPath,
+  async (p) => {
+    vaultError.value = null
+    vaultOk.value = false
+    if (!p) return
+    const api = window.piAtrium as any
+    if (api?.settings?.validateVault) {
+      const err = await api.settings.validateVault(p)
+      vaultError.value = err
+      vaultOk.value = err === null
+    }
+  }
+)
 
 onMounted(load)
 
@@ -90,7 +115,13 @@ watch(
               <input v-model="settings.vaultPath" placeholder="C:\Users\you\Documents\MyVault" />
               <button class="btn-secondary" @click="pickFolder">Pick…</button>
             </div>
-            <p class="hint">If set, the file tree will use this as the root (Wave 8).</p>
+            <p class="hint">
+              Pick the folder that contains your <code>.obsidian/</code> subfolder
+              (e.g. <code>…\ObsidianVault\SecondBrain</code>, not
+              <code>…\ObsidianVault</code>).
+            </p>
+            <p v-if="vaultError" class="vault-error">⚠ {{ vaultError }}</p>
+            <p v-else-if="vaultOk" class="vault-ok">✓ Looks like a vault</p>
           </div>
           <div class="field">
             <label>Default model</label>
@@ -156,6 +187,22 @@ watch(
   border-radius: 4px;
 }
 .close-btn:hover { background: var(--surface-2); color: var(--text); }
+.vault-error {
+  font-size: 12px;
+  color: #f87171;
+  margin: 4px 0 0 0;
+}
+.vault-ok {
+  font-size: 12px;
+  color: #22c55e;
+  margin: 4px 0 0 0;
+}
+.field code {
+  background: var(--surface);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+}
 .modal-body {
   padding: 18px;
   overflow-y: auto;

@@ -148,6 +148,7 @@ const api = {
     get: (): Promise<unknown> => ipcRenderer.invoke('settings:get'),
     set: (s: unknown): Promise<{ ok: boolean }> => ipcRenderer.invoke('settings:set', s),
     pickFolder: (): Promise<string | null> => ipcRenderer.invoke('settings:pickFolder'),
+    validateVault: (p: string): Promise<string | null> => ipcRenderer.invoke('settings:validateVault', p),
   },
 }
 

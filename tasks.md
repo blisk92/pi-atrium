@@ -35,8 +35,10 @@ status: active
 - [x] Concept 2 — **The Quorum** (workspaces + tabs + drawer for files/brain/skills) — created `concept-2.html`
 - [x] Concept 3 — **The Focus** (compact agent pills + full-width chat + slide-out drawer) — created `concept-3.html`
 - [x] Design system documented (`README.md` in concepts/ — colors, typography, effects)
-- [x] **Chosen:** Concept 1 (3-pane) + tabbed right pane — `concept-chosen.html`
-- [x] Chosen concept has interactive tab switching + session selection (JS)
+- [x] **Chosen:** Concept 1 (3-pane) + tabbed right pane + middle pane file tabs — `concept-chosen.html`
+- [x] Chosen concept has interactive tab switching, middle-pane file tabs, and session selection (JS)
+- [x] Top-level README generated for GitHub
+- [x] Git initialized, initial commit pushed to `blisk92/pi-atrium` (public)
 
 ## Phase: Clickable Prototype
 - [ ] Multi-page HTML/CSS/JS prototype built

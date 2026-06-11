@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pi Atrium — New Team</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .member-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .member-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .member-header .name {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .member-avatar {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    display: grid; place-items: center;
+    font-size: 10px; font-weight: 700;
+    color: var(--text);
+  }
+  .skill-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px;
+    background: var(--surface-2);
+    border-radius: 10px;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-dim);
+    margin: 2px;
+  }
+  .skill-chip input { margin: 0; }
+</style>
+</head>
+<body>
+
+<nav class="proto-nav">
+  <span class="label">Pi Atrium · Prototype</span>
+  <a href="index.html">Hub</a>
+  <span class="sep">·</span>
+  <a href="onboarding.html">Onboarding</a>
+  <a href="team-new.html" class="active">Team New</a>
+  <a href="team-active.html">Team Active</a>
+  <a href="voice.html">Voice</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <h1>New Team</h1>
+    <p>Define a team of agents that can collaborate on a project. Save as Draft, or save and start immediately.</p>
+    <div class="meta">
+      <span>TEAM DEFINITION</span>
+      <span>·</span>
+      <span>Validates on save</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      Team
+      <span class="sub">required</span>
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label for="name">Name</label>
+        <input type="text" id="name" value="Q3 Feasibility" />
+        <div class="hint">Display name in the sidebar</div>
+      </div>
+      <div class="form-row">
+        <label for="cwd">Working directory</label>
+        <input type="text" id="cwd" value="C:\Users\edmon\Documents\ObsidianVault\SecondBrain\Projects\Q3 Shoot\" />
+        <div class="hint">Per-team CWD. Overrides global default.</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <label for="desc">Description</label>
+      <textarea id="desc" rows="2">Pre-shoot feasibility study for the GETFMM Q3 video at Cricket Club.</textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      Members
+      <span class="sub">2 of 10 max</span>
+    </div>
+
+    <div class="member-card">
+      <div class="member-header">
+        <div class="name">
+          <div class="member-avatar">FS</div>
+          Feasibility
+        </div>
+        <button class="btn" style="padding: 4px 8px; font-size: 11px; color: var(--error);">Remove</button>
+      </div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Role</label>
+          <input type="text" value="Location scout + risk analyst" />
+        </div>
+        <div class="form-row">
+          <label>Model</label>
+          <select>
+            <option>minimax (M3) — 1M context</option>
+            <option>anthropic/claude-sonnet-4</option>
+            <option>openai/gpt-4.1</option>
+            <option>local (LM Studio)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Initial task</label>
+        <textarea rows="3">Review the recce checklist and the cricket club venue documentation. Identify access, power, and sound constraints. Write findings to notes/feasibility.md in the team's CWD.</textarea>
+      </div>
+      <div class="form-row">
+        <label>Skills</label>
+        <div>
+          <label class="skill-chip"><input type="checkbox" checked> obsidian-read</label>
+          <label class="skill-chip"><input type="checkbox" checked> obsidian-write</label>
+          <label class="skill-chip"><input type="checkbox" checked> mmx-search</label>
+          <label class="skill-chip"><input type="checkbox" checked> mmx-tts</label>
+          <label class="skill-chip"><input type="checkbox"> mmx-image</label>
+          <label class="skill-chip"><input type="checkbox"> pi-intercom</label>
+          <label class="skill-chip"><input type="checkbox" checked> skill-manager</label>
+          <label class="skill-chip"><input type="checkbox" checked> app-context</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="member-card">
+      <div class="member-header">
+        <div class="name">
+          <div class="member-avatar">LG</div>
+          Logistics
+        </div>
+        <button class="btn" style="padding: 4px 8px; font-size: 11px; color: var(--error);">Remove</button>
+      </div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Role</label>
+          <input type="text" value="Crew, equipment, and schedule coordinator" />
+        </div>
+        <div class="form-row">
+          <label>Model</label>
+          <select>
+            <option>minimax (M3) — 1M context</option>
+            <option>anthropic/claude-sonnet-4</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Initial task</label>
+        <textarea rows="3">Build a shoot-day schedule based on the recce findings. Account for crew arrival, equipment setup, lighting windows, and wrap. Save to notes/logistics.md.</textarea>
+      </div>
+      <div class="form-row">
+        <label>Skills</label>
+        <div>
+          <label class="skill-chip"><input type="checkbox" checked> obsidian-read</label>
+          <label class="skill-chip"><input type="checkbox" checked> obsidian-write</label>
+          <label class="skill-chip"><input type="checkbox" checked> mmx-search</label>
+          <label class="skill-chip"><input type="checkbox"> mmx-tts</label>
+          <label class="skill-chip"><input type="checkbox" checked> pi-intercom</label>
+          <label class="skill-chip"><input type="checkbox" checked> skill-manager</label>
+          <label class="skill-chip"><input type="checkbox" checked> app-context</label>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-ghost" style="width: 100%; justify-content: center; margin-top: 4px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      Add member (2 of 10)
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      On start
+      <span class="sub">what happens when you click Start</span>
+    </div>
+    <ul style="margin-left: 20px; color: var(--text-dim); font-size: 13px; line-height: 1.9;">
+      <li>Each member gets a <code class="mono">_pi-agents/agents/&lt;id&gt;/</code> folder with a <code class="mono">.pi/SYSTEM.md</code> persona file</li>
+      <li>Skills are loaded into a headless Pi sidecar per member</li>
+      <li>pi-intercom is initialized so members can talk to each other</li>
+      <li>Initial tasks are dispatched; the team's CWD becomes the work root</li>
+    </ul>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn">Cancel</button>
+    <span class="spacer"></span>
+    <button class="btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Save as Draft
+    </button>
+    <button class="btn btn-primary">
+      Save &amp; Start
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    </button>
+  </div>
+</div>
+
+</body>
+</html>

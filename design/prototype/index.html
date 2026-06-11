@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pi Atrium — Prototype Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .hub-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 24px; }
+  .hub-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    transition: all var(--transition);
+    display: block;
+    color: inherit;
+  }
+  .hub-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .hub-card .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .hub-card h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+  .hub-card p { font-size: 13px; color: var(--text-dim); margin-bottom: 16px; }
+  .hub-card .go {
+    font-size: 12px;
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .hub-card.coming { opacity: 0.5; pointer-events: none; }
+  .back-link {
+    display: inline-block;
+    margin-bottom: 24px;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .back-link:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<nav class="proto-nav">
+  <span class="label">Pi Atrium · Prototype</span>
+  <a href="index.html" class="active">Hub</a>
+  <span class="sep">·</span>
+  <a href="onboarding.html">Onboarding</a>
+  <a href="team-new.html">Team New</a>
+  <a href="team-active.html">Team Active</a>
+  <a href="voice.html">Voice</a>
+  <a href="settings.html">Settings</a>
+  <span class="sep" style="margin-left: auto;"></span>
+  <a href="../concepts/concept-chosen.html" style="color: var(--text-faint);">← Main App</a>
+</nav>
+
+<div class="page">
+  <a href="../concepts/concept-chosen.html" class="back-link">← Main app (concept-chosen)</a>
+  <div class="page-header">
+    <h1>Pi Atrium — Prototype Hub</h1>
+    <p>Lightweight prototype covering the flows not in the main concept HTML. Pick a flow to walk through.</p>
+  </div>
+
+  <div class="hub-grid">
+    <a class="hub-card" href="onboarding.html">
+      <div class="num">01</div>
+      <h3>Onboarding</h3>
+      <p>First-run flow. Link an existing Obsidian vault, create a new one, or auto-detect.</p>
+      <span class="go">onboarding.html →</span>
+    </a>
+
+    <a class="hub-card" href="team-new.html">
+      <div class="num">02</div>
+      <h3>Team Definition</h3>
+      <p>Create a new team: name, CWD, members with role + initial task. Save as Draft or Start immediately.</p>
+      <span class="go">team-new.html →</span>
+    </a>
+
+    <a class="hub-card" href="team-active.html">
+      <div class="num">03</div>
+      <h3>Team Active / Lifecycle</h3>
+      <p>Start team with spawn progress, halt with graceful shutdown, force-kill option, lifecycle states (Draft/Starting/Active/Stopping/Stopped).</p>
+      <span class="go">team-active.html →</span>
+    </a>
+
+    <a class="hub-card" href="voice.html">
+      <div class="num">04</div>
+      <h3>Voice UI States</h3>
+      <p>Push-to-talk active (recording + waveform), TTS playing (agent speaking animation), mic level meter.</p>
+      <span class="go">voice.html →</span>
+    </a>
+
+    <a class="hub-card" href="settings.html">
+      <div class="num">05</div>
+      <h3>Settings</h3>
+      <p>General, voice, model, network (port range), vault, agents defaults, about.</p>
+      <span class="go">settings.html →</span>
+    </a>
+
+    <div class="hub-card coming">
+      <div class="num">—</div>
+      <h3>Main app</h3>
+      <p>See the full chat + file tab UX.</p>
+      <span class="go">../concepts/concept-chosen.html →</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

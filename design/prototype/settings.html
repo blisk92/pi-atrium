@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pi Atrium — Settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .settings-grid {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 24px;
+  }
+  .settings-nav {
+    position: sticky;
+    top: 56px;
+    align-self: start;
+  }
+  .settings-nav a {
+    display: block;
+    padding: 8px 12px;
+    color: var(--text-dim);
+    font-size: 13px;
+    border-radius: var(--radius);
+    margin-bottom: 2px;
+  }
+  .settings-nav a:hover { background: var(--surface); color: var(--text); text-decoration: none; }
+  .settings-nav a.active { background: var(--accent-soft); color: var(--accent); }
+  .settings-nav .group {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-faint);
+    margin: 16px 12px 4px;
+    font-weight: 600;
+  }
+  .toggle {
+    display: inline-flex; align-items: center; gap: 6px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .toggle input { display: none; }
+  .toggle .switch {
+    width: 36px; height: 20px;
+    background: var(--surface-2);
+    border-radius: 10px;
+    position: relative;
+    transition: background var(--transition);
+  }
+  .toggle .switch::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    background: var(--text-dim);
+    border-radius: 50%;
+    transition: all var(--transition);
+  }
+  .toggle input:checked + .switch { background: var(--accent); }
+  .toggle input:checked + .switch::after { left: 18px; background: var(--bg); }
+  @media (max-width: 800px) {
+    .settings-grid { grid-template-columns: 1fr; }
+    .settings-nav { position: static; display: flex; flex-wrap: wrap; gap: 4px; }
+    .settings-nav .group { width: 100%; margin: 8px 0 0; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="proto-nav">
+  <span class="label">Pi Atrium · Prototype</span>
+  <a href="index.html">Hub</a>
+  <span class="sep">·</span>
+  <a href="onboarding.html">Onboarding</a>
+  <a href="team-new.html">Team New</a>
+  <a href="team-active.html">Team Active</a>
+  <a href="voice.html">Voice</a>
+  <a href="settings.html" class="active">Settings</a>
+</nav>
+
+<div class="page page-wide">
+  <div class="page-header">
+    <h1>Settings</h1>
+    <p>All preferences for Pi Atrium. Changes auto-save.</p>
+  </div>
+
+  <div class="settings-grid">
+    <!-- LEFT NAV -->
+    <nav class="settings-nav">
+      <a href="#general" class="active">General</a>
+      <a href="#voice">Voice</a>
+      <a href="#model">Model</a>
+      <a href="#network">Network</a>
+      <a href="#vault">Vault</a>
+      <a href="#agents">Agents</a>
+      <a href="#advanced">Advanced</a>
+      <div class="group">About</div>
+      <a href="#about">Version</a>
+      <a href="#changelog">Changelog</a>
+    </nav>
+
+    <!-- RIGHT CONTENT -->
+    <div>
+      <section id="general" class="card">
+        <div class="card-title">General</div>
+        <div class="form-row">
+          <label>Theme</label>
+          <select>
+            <option selected>Dark (Code Dark + Run Green)</option>
+            <option>Light</option>
+            <option>System</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Language</label>
+          <select>
+            <option selected>English</option>
+            <option>中文</option>
+            <option>日本語</option>
+            <option>Español</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Start on Windows boot</label>
+          <label class="toggle">
+            <input type="checkbox" />
+            <span class="switch"></span>
+            <span>Off</span>
+          </label>
+        </div>
+        <div class="form-row">
+          <label>Minimize to system tray</label>
+          <label class="toggle">
+            <input type="checkbox" checked />
+            <span class="switch"></span>
+            <span>On — closing the window minimizes to tray</span>
+          </label>
+        </div>
+      </section>
+
+      <section id="voice" class="card">
+        <div class="card-title">Voice</div>
+        <div class="form-grid">
+          <div class="form-row">
+            <label>Provider</label>
+            <select>
+              <option selected>voice-loop (MiniMax speech-2.8-hd)</option>
+              <option>OpenAI TTS</option>
+              <option>ElevenLabs</option>
+              <option>System (Windows SAPI)</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Default voice</label>
+            <select>
+              <option selected>aussie-sultry-ladies</option>
+              <option>English_expressive_narrator</option>
+              <option>Custom voice…</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-row">
+            <label>Model</label>
+            <select>
+              <option selected>speech-2.8-hd (best quality)</option>
+              <option>speech-2.8-turbo (faster)</option>
+              <option>speech-2.6-hd</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Speed</label>
+            <input type="number" min="0.5" max="2.0" step="0.1" value="1.0" />
+          </div>
+        </div>
+        <div class="form-row">
+          <label>PTT input</label>
+          <div class="form-row" style="margin-bottom: 8px;">
+            <label>Hotkey</label>
+            <input type="text" value="Ctrl+Space" />
+            <div class="hint">Hold to record, release to send</div>
+          </div>
+          <div class="form-grid">
+            <div class="form-row">
+              <label>STT backend</label>
+              <select>
+                <option selected>local Whisper (faster-whisper-server :8765)</option>
+                <option>Groq Whisper</option>
+                <option>OpenAI Whisper</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Max recording</label>
+              <input type="number" min="10" max="300" step="5" value="60" />
+              <div class="hint">seconds · auto-stops + sends</div>
+            </div>
+          </div>
+        </div>
+        <div class="btn-row right">
+          <button class="btn">Test mic</button>
+          <button class="btn">Test voice</button>
+        </div>
+      </section>
+
+      <section id="model" class="card">
+        <div class="card-title">Default model (LLM)</div>
+        <div class="form-row">
+          <label>Default provider for new agents</label>
+          <select>
+            <option selected>minimax (M3) — 1M context</option>
+            <option>anthropic/claude-sonnet-4</option>
+            <option>openai/gpt-4.1</option>
+            <option>google/gemini-2.5-pro</option>
+            <option>local (LM Studio)</option>
+            <option>local (Ollama)</option>
+          </select>
+          <div class="hint">Configured in <code class="mono">~/.pi/agent/models.json</code></div>
+        </div>
+        <div class="form-row">
+          <label>Per-agent override</label>
+          <div style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; font-size: 12px; color: var(--text-faint);">
+            Set per agent in <a href="team-new.html" style="font-family: 'JetBrains Mono', monospace;">team-new.html</a> or edit each agent's <code class="mono">config.json</code> in the vault.
+          </div>
+        </div>
+      </section>
+
+      <section id="network" class="card">
+        <div class="card-title">Network</div>
+        <div class="form-grid">
+          <div class="form-row">
+            <label>Port range for Pi sidecars</label>
+            <input type="text" value="49152-49252" />
+            <div class="hint">IANA dynamic range · 100 ports = up to 100 concurrent agents</div>
+          </div>
+          <div class="form-row">
+            <label>stt-server URL</label>
+            <input type="text" value="http://localhost:8765" />
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Allow network access for skills</label>
+          <label class="toggle">
+            <input type="checkbox" checked />
+            <span class="switch"></span>
+            <span>On — skills can make web requests (default)</span>
+          </label>
+        </div>
+      </section>
+
+      <section id="vault" class="card">
+        <div class="card-title">Vault (knowledge base)</div>
+        <div class="form-row">
+          <label>Current vault</label>
+          <input type="text" value="C:\Users\edmon\Documents\ObsidianVault\SecondBrain\" />
+          <div class="hint">1,247 notes · last opened 2 min ago</div>
+        </div>
+        <div class="form-row">
+          <label>State folder</label>
+          <input type="text" value="C:\Users\edmon\Documents\ObsidianVault\SecondBrain\_pi-agents\" />
+          <div class="hint">where teams, agents, and brains live</div>
+        </div>
+        <div class="btn-row right">
+          <button class="btn">Switch vault…</button>
+        </div>
+      </section>
+
+      <section id="agents" class="card">
+        <div class="card-title">Defaults for new agents</div>
+        <div class="form-grid">
+          <div class="form-row">
+            <label>Max concurrent agents</label>
+            <input type="number" min="1" max="50" value="10" />
+            <div class="hint">per team (memory: ~100MB/agent)</div>
+          </div>
+          <div class="form-row">
+            <label>Auto-save brain</label>
+            <select>
+              <option selected>Every turn (high fidelity)</option>
+              <option>Every 5 turns</option>
+              <option>On session end only</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Default skill pack for new agents</label>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <label class="toggle" style="background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 4px 10px;">
+              <input type="checkbox" checked /><span>obsidian-read</span>
+            </label>
+            <label class="toggle" style="background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 4px 10px;">
+              <input type="checkbox" checked /><span>obsidian-write</span>
+            </label>
+            <label class="toggle" style="background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 4px 10px;">
+              <input type="checkbox" checked /><span>pi-intercom</span>
+            </label>
+            <label class="toggle" style="background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 4px 10px;">
+              <input type="checkbox" checked /><span>app-context</span>
+            </label>
+            <label class="toggle" style="background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 4px 10px;">
+              <input type="checkbox" checked /><span>skill-manager</span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section id="advanced" class="card">
+        <div class="card-title">Advanced</div>
+        <div class="form-row">
+          <label>Vault write scope</label>
+          <div style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+            <div style="color: var(--accent);">● Allow: <code>Projects/</code></div>
+            <div style="color: var(--accent);">● Allow: <code>_pi-agents/</code></div>
+            <div style="color: var(--error);">● Deny: everything else (read-only)</div>
+          </div>
+          <div class="hint">Per-agent override possible (advanced)</div>
+        </div>
+        <div class="form-row">
+          <label>Crash recovery</label>
+          <label class="toggle">
+            <input type="checkbox" checked />
+            <span class="switch"></span>
+            <span>On — prompt to recover previous teams after a crash</span>
+          </label>
+        </div>
+        <div class="form-row">
+          <label>Skill execution trust</label>
+          <select>
+            <option selected>Full trust (you are admin)</option>
+            <option>Warn before running custom skills</option>
+            <option>Sandboxed (advanced, not yet implemented)</option>
+          </select>
+        </div>
+      </section>
+
+      <section id="about" class="card">
+        <div class="card-title">About</div>
+        <table class="tbl">
+          <tr><td>Version</td><td class="mono">v0.1.0 (design phase)</td></tr>
+          <tr><td>Repository</td><td class="mono"><a href="https://github.com/blisk92/pi-atrium">github.com/blisk92/pi-atrium</a></td></tr>
+          <tr><td>Maintainer</td><td>edmond</td></tr>
+          <tr><td>License</td><td>TBD</td></tr>
+          <tr><td>Built with</td><td>Electron · Pi Agent · TypeScript</td></tr>
+        </table>
+      </section>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

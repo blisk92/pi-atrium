@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pi Atrium — Onboarding</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+
+<nav class="proto-nav">
+  <span class="label">Pi Atrium · Prototype</span>
+  <a href="index.html">Hub</a>
+  <span class="sep">·</span>
+  <a href="onboarding.html" class="active">Onboarding</a>
+  <a href="team-new.html">Team New</a>
+  <a href="team-active.html">Team Active</a>
+  <a href="voice.html">Voice</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+<div class="page page-narrow">
+  <div class="page-header">
+    <h1>Welcome to Pi Atrium</h1>
+    <p>Connect a knowledge base to get started. Your Obsidian vault becomes the source of truth for every team's projects and notes.</p>
+    <div class="meta">
+      <span>STEP 1 OF 1</span>
+      <span>·</span>
+      <span>First-run setup</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      Knowledge base
+      <span class="sub">pick a vault</span>
+    </div>
+
+    <div class="choice-grid">
+      <div class="choice active">
+        <div class="choice-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <h3>Link existing vault</h3>
+        <p>Point to a vault you already use. Concierge will read it as the team's source of truth.</p>
+        <div class="badge">● recommended</div>
+      </div>
+
+      <div class="choice">
+        <div class="choice-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        </div>
+        <h3>Create new vault</h3>
+        <p>Pi Atrium creates a fresh Obsidian vault, initializes it, and opens it in your default app.</p>
+      </div>
+
+      <div class="choice">
+        <div class="choice-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <h3>Auto-detect</h3>
+        <p>Scan common locations for Obsidian vaults and pick from the list.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="background: var(--bg);">
+    <div class="card-title">
+      Link existing vault
+      <span class="sub">browse or enter path</span>
+    </div>
+    <div class="form-row">
+      <label for="vault-path">Vault path</label>
+      <input type="text" id="vault-path" value="C:\Users\edmon\Documents\ObsidianVault\SecondBrain\" />
+      <div class="hint">Folder containing <code class="mono">.obsidian/</code></div>
+    </div>
+    <div class="form-row">
+      <div class="checkbox-row">
+        <input type="checkbox" id="auto-detect" />
+        <label for="auto-detect" style="text-transform: none; font-size: 12px; color: var(--text-dim); letter-spacing: 0; font-weight: 400; margin: 0;">
+          Re-scan on startup (recommended)
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      Detected vaults
+      <span class="sub">2 found</span>
+    </div>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>NAME</th>
+          <th>PATH</th>
+          <th>LAST OPENED</th>
+          <th>NOTE COUNT</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>SecondBrain</strong></td>
+          <td class="mono">C:\Users\edmon\Documents\ObsidianVault\SecondBrain\</td>
+          <td>2 min ago</td>
+          <td class="mono">1,247</td>
+          <td><button class="btn" style="padding: 4px 10px; font-size: 11px;">Select</button></td>
+        </tr>
+        <tr>
+          <td>Work Notes</td>
+          <td class="mono">C:\Users\edmon\Documents\ObsidianVault\Work\</td>
+          <td>3 days ago</td>
+          <td class="mono">312</td>
+          <td><button class="btn" style="padding: 4px 10px; font-size: 11px;">Select</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      Concierge briefing
+      <span class="sub">what happens next</span>
+    </div>
+    <p style="color: var(--text-dim); font-size: 13px; line-height: 1.7; margin-bottom: 12px;">
+      When you continue, Concierge will:
+    </p>
+    <ul style="margin-left: 20px; color: var(--text-dim); font-size: 13px; line-height: 1.9;">
+      <li>Read your vault's existing Wiki + Projects structure</li>
+      <li>Create a <code class="mono">_pi-agents/</code> folder for app state (teams, agents, brains)</li>
+      <li>Register itself as a persistent concierge in the sidebar</li>
+      <li>Wait for your first request</li>
+    </ul>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-ghost">Skip for now (offline mode)</button>
+    <span class="spacer"></span>
+    <button class="btn">Back</button>
+    <button class="btn btn-primary">
+      Continue
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+</div>
+
+</body>
+</html>

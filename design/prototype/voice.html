@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pi Atrium — Voice UI States</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .chat-shell {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    max-width: 760px;
+    margin: 0 auto 16px;
+  }
+  .chat-topbar {
+    background: var(--surface);
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .chat-agent { display: flex; align-items: center; gap: 10px; }
+  .chat-agent .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--accent); color: var(--bg);
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 12px;
+  }
+  .chat-agent .name { font-size: 14px; font-weight: 600; }
+  .chat-agent .meta { font-size: 11px; color: var(--text-faint); }
+  .chat-body { padding: 24px; min-height: 240px; display: flex; flex-direction: column; gap: 16px; }
+  .msg { max-width: 540px; }
+  .msg-role { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; }
+  .msg-role.user { color: var(--info); }
+  .msg-role.agent { color: var(--accent); }
+  .msg-body { color: var(--text-dim); font-size: 13px; line-height: 1.6; }
+  .msg-body code { background: var(--surface-2); padding: 1px 6px; border-radius: 3px; color: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+  /* PTT active state */
+  .ptt-active {
+    background: var(--bg);
+    border: 1px solid var(--error);
+    box-shadow: 0 0 0 1px var(--error), 0 0 16px rgba(239, 68, 68, 0.3);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    animation: ptt-glow 1.5s ease-in-out infinite;
+  }
+  @keyframes ptt-glow {
+    0%, 100% { box-shadow: 0 0 0 1px var(--error), 0 0 16px rgba(239, 68, 68, 0.3); }
+    50% { box-shadow: 0 0 0 1px var(--error), 0 0 24px rgba(239, 68, 68, 0.5); }
+  }
+  .ptt-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--error);
+    animation: ptt-pulse 1s ease-in-out infinite;
+  }
+  @keyframes ptt-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.6; } }
+  .ptt-label { font-size: 12px; font-weight: 600; color: var(--error); flex: 1; }
+  .ptt-key { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-faint); padding: 2px 6px; background: var(--surface-2); border-radius: 3px; }
+  .waveform {
+    display: flex; align-items: center; gap: 2px;
+    height: 24px;
+  }
+  .waveform-bar {
+    width: 3px;
+    background: var(--error);
+    border-radius: 2px;
+    animation: wave 0.8s ease-in-out infinite;
+  }
+  .waveform-bar:nth-child(1) { height: 30%; animation-delay: 0s; }
+  .waveform-bar:nth-child(2) { height: 60%; animation-delay: 0.1s; }
+  .waveform-bar:nth-child(3) { height: 90%; animation-delay: 0.2s; }
+  .waveform-bar:nth-child(4) { height: 70%; animation-delay: 0.3s; }
+  .waveform-bar:nth-child(5) { height: 50%; animation-delay: 0.4s; }
+  .waveform-bar:nth-child(6) { height: 80%; animation-delay: 0.5s; }
+  .waveform-bar:nth-child(7) { height: 40%; animation-delay: 0.6s; }
+  .waveform-bar:nth-child(8) { height: 60%; animation-delay: 0.7s; }
+  @keyframes wave { 0%, 100% { transform: scaleY(0.5); } 50% { transform: scaleY(1); } }
+
+  /* TTS playing state */
+  .tts-playing {
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 600;
+    margin-top: 8px;
+  }
+  .tts-playing .bar { display: inline-flex; gap: 2px; align-items: center; height: 12px; }
+  .tts-playing .bar span {
+    width: 2px; height: 100%;
+    background: var(--accent);
+    border-radius: 1px;
+    animation: tts-bounce 0.6s ease-in-out infinite;
+  }
+  .tts-playing .bar span:nth-child(2) { animation-delay: 0.1s; }
+  .tts-playing .bar span:nth-child(3) { animation-delay: 0.2s; }
+  .tts-playing .bar span:nth-child(4) { animation-delay: 0.3s; }
+  @keyframes tts-bounce { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+
+  /* TTS toggle pill (sidebar) */
+  .tts-toggle {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .tts-toggle.on { background: var(--accent-soft); color: var(--accent); }
+  .tts-toggle.off { background: rgba(148, 163, 184, 0.15); color: var(--text-faint); }
+
+  /* Mic level meter */
+  .level-meter {
+    display: flex; align-items: center; gap: 3px;
+    height: 8px;
+  }
+  .level-bar { width: 4px; height: 100%; background: var(--border); border-radius: 1px; }
+  .level-bar.active { background: var(--accent); }
+  .level-bar:nth-child(1).active { opacity: 0.4; }
+  .level-bar:nth-child(2).active { opacity: 0.55; }
+  .level-bar:nth-child(3).active { opacity: 0.7; }
+  .level-bar:nth-child(4).active { opacity: 0.8; }
+  .level-bar:nth-child(5).active { opacity: 0.85; }
+  .level-bar:nth-child(6).active { opacity: 0.9; }
+  .level-bar:nth-child(7).active { opacity: 0.95; }
+  .level-bar:nth-child(8).active { opacity: 1; }
+</style>
+</head>
+<body>
+
+<nav class="proto-nav">
+  <span class="label">Pi Atrium · Prototype</span>
+  <a href="index.html">Hub</a>
+  <span class="sep">·</span>
+  <a href="onboarding.html">Onboarding</a>
+  <a href="team-new.html">Team New</a>
+  <a href="team-active.html">Team Active</a>
+  <a href="voice.html" class="active">Voice</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <h1>Voice UI States</h1>
+    <p>The three voice interactions in Pi Atrium: PTT input, TTS output, and the per-agent toggle in the sidebar.</p>
+  </div>
+
+  <!-- STATE 1: Push-to-talk active -->
+  <div class="card">
+    <div class="card-title">State — Pushing to talk (recording)</div>
+
+    <div class="chat-shell">
+      <div class="chat-topbar">
+        <div class="chat-agent">
+          <div class="avatar">FS</div>
+          <div>
+            <div class="name">Feasibility</div>
+            <div class="meta">t-002 · 5 skills · listening…</div>
+          </div>
+        </div>
+        <span class="tts-toggle off">🔇 TTS off</span>
+      </div>
+      <div class="chat-body">
+        <div class="msg">
+          <div class="msg-role user">You · 10:42</div>
+          <div class="msg-body">What are the access constraints for the cricket club location?</div>
+        </div>
+      </div>
+      <div style="padding: 16px; border-top: 1px solid var(--border); background: var(--surface);">
+        <div class="ptt-active">
+          <span class="ptt-dot"></span>
+          <div class="waveform">
+            <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+            <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+          </div>
+          <div class="ptt-label">RECORDING — 0:04 / 60s</div>
+          <span class="ptt-key">Ctrl+Space</span>
+        </div>
+        <div style="margin-top: 10px; display: flex; align-items: center; gap: 12px; font-size: 11px; color: var(--text-faint);">
+          <span>Input level:</span>
+          <div class="level-meter">
+            <div class="level-bar active"></div>
+            <div class="level-bar active"></div>
+            <div class="level-bar active"></div>
+            <div class="level-bar active"></div>
+            <div class="level-bar active"></div>
+            <div class="level-bar active"></div>
+            <div class="level-bar"></div>
+            <div class="level-bar"></div>
+          </div>
+          <span style="margin-left: auto; font-family: 'JetBrains Mono', monospace;">−18 dB · clean</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATE 2: TTS playing -->
+  <div class="card">
+    <div class="card-title">State — Agent speaking (TTS output)</div>
+
+    <div class="chat-shell">
+      <div class="chat-topbar">
+        <div class="chat-agent">
+          <div class="avatar">CC</div>
+          <div>
+            <div class="name">Concierge</div>
+            <div class="meta">★ · 5 skills · speaking…</div>
+          </div>
+        </div>
+        <span class="tts-toggle on">🔊 TTS on</span>
+      </div>
+      <div class="chat-body">
+        <div class="msg">
+          <div class="msg-role user">You · 10:48</div>
+          <div class="msg-body">Spin up a 3-agent team for Q3 Feasibility. I need a researcher, a logistics planner, and a budget estimator.</div>
+        </div>
+        <div class="msg">
+          <div class="msg-role agent">Concierge · 10:48</div>
+          <div class="msg-body">On it. I'll spin up a team called <code>Q3 Feasibility</code> with three specialists. Each gets a SYSTEM.md persona and a scoped initial task. Let me know when you want them started.</div>
+          <div class="tts-playing">
+            <div class="bar"><span></span><span></span><span></span><span></span></div>
+            SPEAKING · 0:03 / 0:05 · Concierge
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATE 3: Per-agent TTS toggle (in sidebar) -->
+  <div class="card">
+    <div class="card-title">Per-agent TTS toggle (in session picker)</div>
+    <p style="font-size: 12px; color: var(--text-dim); margin-bottom: 12px;">
+      Each session in the sidebar has a small TTS toggle. Click to enable voice output for that agent. Default: OFF.
+    </p>
+
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; max-width: 320px;">
+      <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 4px; background: var(--accent-soft); margin-bottom: 4px;">
+        <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent);"></div>
+        <div style="flex: 1; font-size: 13px;">Concierge <span class="mono" style="font-size: 10px; color: var(--text-faint); margin-left: 6px;">★</span></div>
+        <span class="tts-toggle on">🔊 on</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 4px; margin-bottom: 4px;">
+        <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--text-faint);"></div>
+        <div style="flex: 1; font-size: 13px;">Feasibility</div>
+        <span class="tts-toggle off">🔇 off</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 4px; margin-bottom: 4px;">
+        <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--text-faint);"></div>
+        <div style="flex: 1; font-size: 13px;">Logistics</div>
+        <span class="tts-toggle on">🔊 on</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 4px;">
+        <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--text-faint);"></div>
+        <div style="flex: 1; font-size: 13px;">Storyboard</div>
+        <span class="tts-toggle off">🔇 off</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS SHORTCUT -->
+  <div class="card">
+    <div class="card-title">Voice settings (link from chat topbar)</div>
+    <table class="tbl">
+      <thead><tr><th>SETTING</th><th>VALUE</th><th>NOTES</th></tr></thead>
+      <tbody>
+        <tr><td>Provider</td><td>voice-loop (MiniMax)</td><td>reuses existing extension</td></tr>
+        <tr><td>Default voice</td><td>aussie-sultry-ladies</td><td>configurable per team in v2</td></tr>
+        <tr><td>Model</td><td>speech-2.8-hd</td><td>best quality</td></tr>
+        <tr><td>Speed</td><td>1.0×</td><td>slider 0.5× – 2.0×</td></tr>
+        <tr><td>PTT hotkey</td><td>Ctrl+Space</td><td>hold to record</td></tr>
+        <tr><td>Max recording</td><td>60s</td><td>auto-stop + send</td></tr>
+        <tr><td>STT backend</td><td>local Whisper</td><td>uses faster-whisper-server on port 8765</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</body>
+</html>

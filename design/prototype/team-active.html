@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pi Atrium — Team Active</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .status-banner {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .status-banner.starting { border-left-color: var(--info); }
+  .status-banner.stopping { border-left-color: var(--warn); }
+  .status-banner.error { border-left-color: var(--error); }
+  .status-banner .icon {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--bg);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .status-banner.active .icon { background: var(--accent-soft); color: var(--accent); }
+  .status-banner.starting .icon { background: rgba(56, 189, 248, 0.12); color: var(--info); }
+  .status-banner.stopping .icon { background: rgba(245, 158, 11, 0.12); color: var(--warn); }
+  .status-banner.error .icon { background: rgba(239, 68, 68, 0.12); color: var(--error); }
+  .status-banner .info { flex: 1; }
+  .status-banner .info h3 { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .status-banner .info p { font-size: 12px; color: var(--text-dim); }
+  .progress-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    width: 60%;
+    transition: width 300ms ease;
+  }
+  .progress-bar.indeterminate .progress-bar-fill {
+    width: 30% !important;
+    animation: indeterminate 1.5s ease-in-out infinite;
+  }
+  @keyframes indeterminate {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+  }
+  .lifecycle-timeline {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .lifecycle-step {
+    background: var(--surface);
+    padding: 12px 16px;
+    text-align: center;
+    position: relative;
+  }
+  .lifecycle-step.active { background: var(--accent-soft); }
+  .lifecycle-step.passed { background: var(--surface); color: var(--text-dim); }
+  .lifecycle-step.future { background: var(--surface); color: var(--text-faint); }
+  .lifecycle-step .num { font-size: 10px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; }
+  .lifecycle-step .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .lifecycle-step.active .label { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<nav class="proto-nav">
+  <span class="label">Pi Atrium · Prototype</span>
+  <a href="index.html">Hub</a>
+  <span class="sep">·</span>
+  <a href="onboarding.html">Onboarding</a>
+  <a href="team-new.html">Team New</a>
+  <a href="team-active.html" class="active">Team Active</a>
+  <a href="voice.html">Voice</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <h1>Team Lifecycle</h1>
+    <p>How a team moves from Draft → Starting → Active → Stopping → Stopped, with spawn and halt progress.</p>
+  </div>
+
+  <!-- LIFECYCLE TIMELINE (visual reference) -->
+  <div class="card">
+    <div class="card-title">
+      Lifecycle
+      <span class="sub">5 states</span>
+    </div>
+    <div class="lifecycle-timeline">
+      <div class="lifecycle-step passed">
+        <div class="num">1</div>
+        <div class="label">Draft</div>
+      </div>
+      <div class="lifecycle-step active">
+        <div class="num">2</div>
+        <div class="label">● Starting</div>
+      </div>
+      <div class="lifecycle-step future">
+        <div class="num">3</div>
+        <div class="label">Active</div>
+      </div>
+      <div class="lifecycle-step future">
+        <div class="num">4</div>
+        <div class="label">Stopping</div>
+      </div>
+      <div class="lifecycle-step future">
+        <div class="num">5</div>
+        <div class="label">Stopped</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATE 1: STARTING (with progress) -->
+  <div class="card">
+    <div class="card-title">State — Starting (in progress)</div>
+
+    <div class="status-banner starting">
+      <div class="icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div class="info">
+        <h3>Starting Q3 Feasibility…</h3>
+        <p>Best-effort: 1 of 2 agents started. Failures will be marked in the sidebar.</p>
+        <div class="progress-bar"><div class="progress-bar-fill" style="width: 50%;"></div></div>
+      </div>
+    </div>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>AGENT</th>
+          <th>STATUS</th>
+          <th>PORT</th>
+          <th>SKILLS</th>
+          <th>STARTED</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Feasibility</strong></td>
+          <td><span class="pill pill-active"><span class="dot"></span> Active</span></td>
+          <td class="mono">49152</td>
+          <td class="mono">8 / 8</td>
+          <td>2.1s</td>
+        </tr>
+        <tr>
+          <td>Logistics</td>
+          <td><span class="pill pill-starting"><span class="dot"></span> Starting…</span></td>
+          <td class="mono">49153</td>
+          <td class="mono">7 / 7</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- STATE 2: ACTIVE -->
+  <div class="card">
+    <div class="card-title">State — Active</div>
+
+    <div class="status-banner active">
+      <div class="icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="info">
+        <h3>Q3 Feasibility — running</h3>
+        <p>2 agents active · started 12 min ago · 47 turns · 0 errors</p>
+        <div class="progress-bar"><div class="progress-bar-fill" style="width: 100%; background: var(--accent);"></div></div>
+      </div>
+    </div>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>AGENT</th>
+          <th>STATUS</th>
+          <th>PORT</th>
+          <th>TURNS</th>
+          <th>LAST ACTIVITY</th>
+          <th>SKILLS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Feasibility</strong></td>
+          <td><span class="pill pill-active"><span class="dot"></span> Active</span></td>
+          <td class="mono">49152</td>
+          <td class="mono">23</td>
+          <td>2 min ago · wrote feasibility.md</td>
+          <td class="mono">8 / 8</td>
+        </tr>
+        <tr>
+          <td>Logistics</td>
+          <td><span class="pill pill-active"><span class="dot"></span> Active</span></td>
+          <td class="mono">49153</td>
+          <td class="mono">24</td>
+          <td>1 min ago · called obsidian-read</td>
+          <td class="mono">7 / 7</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="btn-row right">
+      <button class="btn btn-danger">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+        Halt team
+      </button>
+    </div>
+  </div>
+
+  <!-- STATE 3: STOPPING -->
+  <div class="card">
+    <div class="card-title">State — Stopping (graceful shutdown)</div>
+
+    <div class="status-banner stopping">
+      <div class="icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <div class="info">
+        <h3>Halt in progress… agents have 10s to save brain state</h3>
+        <p>1 of 2 agents saved and exited. 1 still finalizing.</p>
+        <div class="progress-bar indeterminate"><div class="progress-bar-fill"></div></div>
+      </div>
+    </div>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>AGENT</th>
+          <th>STATUS</th>
+          <th>BRAIN SAVED</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Feasibility</strong></td>
+          <td><span class="pill pill-stopped">Stopped</span></td>
+          <td class="mono">14 KB · 3 entries</td>
+        </tr>
+        <tr>
+          <td>Logistics</td>
+          <td><span class="pill pill-stopping"><span class="dot"></span> Saving…</span></td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="btn-row right">
+      <button class="btn btn-danger">Force quit</button>
+    </div>
+  </div>
+
+  <!-- STATE 4: PARTIAL FAILURE -->
+  <div class="card">
+    <div class="card-title">State — Partial failure (one agent failed to start)</div>
+
+    <div class="status-banner error">
+      <div class="icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      </div>
+      <div class="info">
+        <h3>Q3 Feasibility — started with 1 failure</h3>
+        <p>1 of 2 agents started. Storyboard failed to spawn (port 49154 already in use). Retried once; same error.</p>
+      </div>
+    </div>
+
+    <table class="tbl">
+      <thead>
+        <tr><th>AGENT</th><th>STATUS</th><th>RETRY</th><th>ACTION</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Feasibility</strong></td>
+          <td><span class="pill pill-active"><span class="dot"></span> Active</span></td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>Storyboard</td>
+          <td><span class="pill pill-error">Failed</span></td>
+          <td class="mono">1 / 1 (gave up)</td>
+          <td><button class="btn" style="padding: 4px 8px; font-size: 11px;">Retry</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</body>
+</html>

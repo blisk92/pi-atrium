@@ -130,6 +130,26 @@ Derived from `ui-ux-pro-max` skill (query: "Electron desktop developer tool mult
 
 ---
 
+## Prototype: missing-flows pass
+
+**Folder:** `design/prototype/`
+
+**Hub:** `index.html` — links to all 5 flow pages
+
+5 lightweight HTML pages covering the flows the main concept doesn't show. Each page is a standalone walkthrough. Shared design system in `shared.css`.
+
+| Page | What it covers |
+|---|---|
+| `onboarding.html` | First-run: link existing vault · create new · auto-detect |
+| `team-new.html` | Team definition form (name, CWD, members with role + skills) |
+| `team-active.html` | All 5 lifecycle states (Draft → Starting → Active → Stopping → Stopped) + partial-failure handling |
+| `voice.html` | PTT active (waveform + level meter) · TTS playing (speaking animation) · per-agent toggle |
+| `settings.html` | General · Voice · Model · Network · Vault · Agents defaults · Advanced · About |
+
+Use the top nav bar to jump between pages. The Hub page is the index.
+
+---
+
 ## Open questions for user
 
 1. Which layout feels closest to what you want?

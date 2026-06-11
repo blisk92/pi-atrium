@@ -37,7 +37,7 @@ See [[Pi Atrium Tasks]] for the full task list and [[Pi Atrium PRD]] for require
 
 *(Currently being worked on — keep this lane small)*
 
-- **Phase: Design Concepts** — `concept-chosen.html` (Concept 1 + tabbed right pane) is the starting point for Clickable Prototype
+- **Phase: Clickable Prototype** — 5 prototype pages built (onboarding, team-new, team-active, voice, settings) + hub. Awaiting user review.
 
 ## Review / QA
 

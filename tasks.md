@@ -41,10 +41,20 @@ status: active
 - [x] Git initialized, initial commit pushed to `blisk92/pi-atrium` (public)
 
 ## Phase: Clickable Prototype
-- [ ] Multi-page HTML/CSS/JS prototype built
-- [ ] All 10 features navigable (even if stubbed)
-- [ ] User can complete core user story end-to-end (define team → start → talk to agent)
-- [ ] User approves prototype
+- [x] Multi-page HTML/CSS/JS prototype built (lightweight "missing flows" pass)
+- [x] All 10 features navigable (5 prototype pages + main concept)
+  - [x] Main chat + file tabs (concept-chosen.html)
+  - [x] Onboarding (onboarding.html)
+  - [x] Team definition (team-new.html)
+  - [x] Start/Stop team lifecycle (team-active.html)
+  - [x] Per-agent brain + skills (concept-chosen right pane)
+  - [x] Voice UI (voice.html)
+  - [x] Knowledge base / vault (onboarding.html)
+  - [x] Project source of truth (concept-chosen + team-new)
+  - [x] Settings (settings.html)
+  - [x] Concierge (concept-chosen + team-new)
+- [x] User can complete core user story end-to-end (define team → start → talk to agent)
+- [ ] User reviews and approves prototype
 
 ## Phase: Design System
 - [ ] Tokens defined (colors, typography, spacing, motion)

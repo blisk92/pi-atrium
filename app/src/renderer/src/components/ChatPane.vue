@@ -182,6 +182,8 @@ function fmtTime(ts: number): string {
   overflow: hidden;
   min-width: 0;
   height: 100%;
+  width: 100%;
+  flex: 1;
 }
 .empty-all { padding: 24px; color: var(--text-faint); text-align: center; }
 
@@ -288,6 +290,8 @@ function fmtTime(ts: number): string {
   border-top: 1px solid var(--border);
   background: var(--surface);
   flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 .input-box {
   display: flex;
@@ -298,6 +302,8 @@ function fmtTime(ts: number): string {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   transition: border-color 0.15s;
+  width: 100%;
+  box-sizing: border-box;
 }
 .input-box:focus-within { border-color: var(--accent); }
 .input-box textarea {

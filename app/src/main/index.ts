@@ -7,6 +7,7 @@
 
 import { app, BrowserWindow, shell, ipcMain } from 'electron'
 import { fileURLToPath } from 'node:url'
+import WS from 'ws'
 import path from 'node:path'
 import fs from 'node:fs/promises'
 import {
@@ -69,6 +70,8 @@ interface Session {
   agentDir?: string
   errorMessage?: string
   sseReq: http.ClientRequest | null
+  /** Long-lived WebSocket connection to the sidecar (replaces SSE). */
+  wsClient: import('ws').WebSocket | null
   memory: MemoryEntry[]
 }
 
@@ -192,50 +195,59 @@ async function pollSessionHealth(session: Session, retries = 30): Promise<void> 
  * to the renderer over IPC. Reconnects on failure.
  */
 function startSessionSse(session: Session): void {
+  const backoff = { ms: 500, cap: 10_000 }
   const connect = (): void => {
     if (!session.pid) return
-    session.sseReq = http.get(
-      {
-        hostname: '127.0.0.1',
-        port: session.port,
-        path: '/events',
-        headers: { Accept: 'text/event-stream' },
-      },
-      (res) => {
-        if (res.statusCode !== 200) {
-          res.resume()
-          setTimeout(connect, 1000)
-          return
-        }
-        let buffer = ''
-        res.setEncoding('utf-8')
-        res.on('data', (chunk: string) => {
-          buffer += chunk
-          let idx: number
-          while ((idx = buffer.indexOf('\n\n')) !== -1) {
-            const block = buffer.slice(0, idx)
-            buffer = buffer.slice(idx + 2)
-            for (const line of block.split('\n')) {
-              if (line.startsWith('data: ')) {
-                try {
-                  const event = JSON.parse(line.slice(6)) as { type: string; [k: string]: unknown }
-                  broadcastSessionEvent(session.id, event)
-                } catch {
-                  /* ignore non-JSON */
-                }
-                break
-              }
-            }
-          }
-        })
-        res.on('end', () => setTimeout(connect, 1000))
-        res.on('error', () => setTimeout(connect, 1000))
-      }
-    )
-    session.sseReq.on('error', () => {
-      // will reconnect on close
+    const url = `ws://127.0.0.1:${session.port}/ws`
+    let ws: WS
+    try {
+      ws = new WS(url, { handshakeTimeout: 3000 } as WS.ClientOptions)
+    } catch (err) {
+      console.warn(`[main] ws construct failed for ${session.id}:`, (err as Error).message)
+      setTimeout(connect, backoff.ms)
+      return
+    }
+    session.wsClient = ws
+
+    ws.on('open', () => {
+      backoff.ms = 500
+      console.log(`[main] ws connected to ${session.id} (port ${session.port})`)
     })
-    session.sseReq.setTimeout(0)
+
+    ws.on('message', (data: WS.RawData) => {
+      let event: { type: string; [k: string]: unknown } | null = null
+      try {
+        event = JSON.parse(data.toString('utf-8')) as { type: string }
+      } catch {
+        return
+      }
+      if (!event) return
+      // Drop ack frames; only forward agent events.
+      if (
+        event.type === 'sent' ||
+        event.type === 'aborted' ||
+        event.type === 'pong' ||
+        event.type === 'error'
+      ) {
+        return
+      }
+      broadcastSessionEvent(session.id, event)
+    })
+
+    const reconnect = (): void => {
+      if (session.wsClient === ws) session.wsClient = null
+      if (!session.pid) return
+      const wait = backoff.ms
+      backoff.ms = Math.min(backoff.ms * 2, backoff.cap)
+      setTimeout(connect, wait)
+      console.log(`[main] ws reconnecting to ${session.id} in ${wait}ms`)
+    }
+
+    ws.on('close', reconnect)
+    ws.on('error', (err: Error) => {
+      console.warn(`[main] ws error for ${session.id}:`, err.message)
+      try { ws.terminate() } catch { /* ignore */ }
+    })
   }
   connect()
 }
@@ -276,6 +288,7 @@ async function spawnSession(name?: string): Promise<Session> {
     isConcierge,
     ttsEnabled: false,
     sseReq: null,
+    wsClient: null,
     memory: [],
   }
   sessions.set(id, session)
@@ -331,6 +344,45 @@ function stopSession(id: string): boolean {
   return true
 }
 
+/**
+ * Send a prompt to the sidecar over its WebSocket. Returns a promise that
+ * resolves once the sidecar acks the message (or rejects on timeout/error).
+ * Falls back to the next attempt if the WS isn't open yet.
+ */
+function sendViaWs(
+  s: Session,
+  text: string,
+  streamingBehavior?: 'steer' | 'followUp'
+): { ok: boolean; status?: number; error?: string } {
+  if (s.status !== 'active') return { ok: false, error: 'not active' }
+  const ws = s.wsClient
+  if (!ws || ws.readyState !== ws.OPEN) return { ok: false, error: 'ws not connected' }
+  try {
+    ws.send(
+      JSON.stringify({
+        type: 'send',
+        text,
+        ...(streamingBehavior ? { streamingBehavior } : {}),
+      })
+    )
+    return { ok: true, status: 202 }
+  } catch (err) {
+    return { ok: false, error: (err as Error).message }
+  }
+}
+
+function abortViaWs(s: Session): { ok: boolean; error?: string } {
+  if (s.status !== 'active') return { ok: false, error: 'not active' }
+  const ws = s.wsClient
+  if (!ws || ws.readyState !== ws.OPEN) return { ok: false, error: 'ws not connected' }
+  try {
+    ws.send(JSON.stringify({ type: 'abort' }))
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: (err as Error).message }
+  }
+}
+
 // ----- Backward-compat: keep `concierge` as session #0 -----
 // Spawned in app.whenReady() below. Legacy `concierge:*` IPC handlers are kept
 // for now and just delegate to the first session.
@@ -350,6 +402,7 @@ async function ensureConcierge(): Promise<void> {
     isConcierge: true,
     ttsEnabled: false,
     sseReq: null,
+    wsClient: null,
     memory: [],
   }
   sessions.set('concierge', concierge)
@@ -495,6 +548,7 @@ async function startTeamMembers(teamId: string): Promise<void> {
           isConcierge: false,
           ttsEnabled: false,
           sseReq: null,
+          wsClient: null,
           memory: [],
           agentDir: memberFolder,
         }
@@ -860,27 +914,13 @@ app.whenReady().then(async () => {
   ipcMain.handle('concierge:get', () => sessionSnapshot(getConcierge() as Session))
   ipcMain.handle('concierge:send', async (_evt, text: string) => {
     const c = getConcierge()
-    if (!c || c.status !== 'active') return { ok: false, error: 'concierge not active' }
-    try {
-      const res = await fetch(`http://127.0.0.1:${c.port}/message`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-      })
-      return { ok: res.ok, status: res.status }
-    } catch (err) {
-      return { ok: false, error: (err as Error).message }
-    }
+    if (!c) return { ok: false, error: 'no concierge' }
+    return sendViaWs(c, text)
   })
   ipcMain.handle('concierge:abort', async () => {
     const c = getConcierge()
     if (!c) return { ok: false, error: 'no concierge' }
-    try {
-      const res = await fetch(`http://127.0.0.1:${c.port}/abort`, { method: 'POST' })
-      return { ok: res.ok, status: res.status }
-    } catch (err) {
-      return { ok: false, error: (err as Error).message }
-    }
+    return abortViaWs(c)
   })
 
   // --- Multi-session IPC (Wave 1 Task 1.3) ---
@@ -906,27 +946,12 @@ app.whenReady().then(async () => {
   ipcMain.handle('sessions:send', async (_evt, id: string, text: string, opts?: { streamingBehavior?: 'steer' | 'followUp' }) => {
     const s = sessions.get(id)
     if (!s) return { ok: false, error: 'no such session' }
-    if (s.status !== 'active') return { ok: false, error: 'not active' }
-    try {
-      const res = await fetch(`http://127.0.0.1:${s.port}/message`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, streamingBehavior: opts?.streamingBehavior }),
-      })
-      return { ok: res.ok, status: res.status }
-    } catch (err) {
-      return { ok: false, error: (err as Error).message }
-    }
+    return sendViaWs(s, text, opts?.streamingBehavior)
   })
   ipcMain.handle('sessions:abort', async (_evt, id: string) => {
     const s = sessions.get(id)
     if (!s) return { ok: false, error: 'no such session' }
-    try {
-      const res = await fetch(`http://127.0.0.1:${s.port}/abort`, { method: 'POST' })
-      return { ok: res.ok, status: res.status }
-    } catch (err) {
-      return { ok: false, error: (err as Error).message }
-    }
+    return abortViaWs(s)
   })
   ipcMain.handle('sessions:remember', (_evt, id: string, text: string) => {
     const s = sessions.get(id)

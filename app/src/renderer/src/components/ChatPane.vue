@@ -159,6 +159,10 @@ function fmtTime(ts: number): string {
             </span>
             <span class="time">{{ fmtTime(m.timestamp) }}</span>
           </div>
+          <div v-if="m.thinking" class="message-thinking">
+            <span class="thinking-label">thinking</span>
+            <span class="thinking-text">{{ m.thinking }}</span>
+          </div>
           <div class="message-body" :class="{ 'is-system': m.role === 'system' }">
             <span v-if="m.content" v-text="m.content"></span>
             <span v-else-if="m.streaming" class="typing">thinking…</span>
@@ -289,6 +293,38 @@ function fmtTime(ts: number): string {
 }
 .message.streaming .message-body { border-color: var(--accent); }
 .typing { color: var(--text-faint); font-style: italic; }
+
+.message-thinking {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 4px;
+  margin-bottom: 6px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border-left: 2px solid var(--accent-soft);
+  border-radius: 0 4px 4px 0;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-faint);
+  line-height: 1.5;
+  max-width: 90%;
+}
+.thinking-label {
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  font-size: 9px;
+  padding: 1px 5px;
+  background: var(--accent-soft);
+  color: var(--bg);
+  border-radius: 3px;
+  margin-top: 1px;
+}
+.thinking-text {
+  white-space: pre-wrap;
+}
 .cursor {
   display: inline-block;
   animation: blink 1s steps(2) infinite;

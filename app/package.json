@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
+    "@types/ws": "^8.18.1",
     "@vitejs/plugin-vue": "^5.2.1",
     "electron": "^33.2.1",
     "electron-builder": "^25.1.8",

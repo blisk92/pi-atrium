@@ -247,17 +247,22 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  function extractText(event: { [k: string]: unknown }): string {
+  function extractText(event: { [k: string]: unknown }): { text: string; thinking: string } {
     const msg = event['message'] as { content?: unknown } | undefined
     const content = msg?.content
-    if (!Array.isArray(content)) return ''
+    if (!Array.isArray(content)) return { text: '', thinking: '' }
     let text = ''
+    let thinking = ''
     for (const block of content) {
-      if (block && typeof block === 'object' && (block as { type?: string }).type === 'text') {
+      if (!block || typeof block !== 'object') continue
+      const t = (block as { type?: string }).type
+      if (t === 'text') {
         text += ((block as { text?: string }).text) || ''
+      } else if (t === 'thinking') {
+        thinking += ((block as { thinking?: string }).thinking) || ''
       }
     }
-    return text
+    return { text, thinking }
   }
 
   function handleEvent(sessionId: string, event: { type: string; [k: string]: unknown }): void {
@@ -271,7 +276,7 @@ export const useChatStore = defineStore('chat', () => {
       if (!isAssistant) return
       const msg = s.messages.find((m) => m.id === s.streamingId)
       if (!msg) return
-      const text = extractText(event)
+      const { text, thinking } = extractText(event)
       if (text) {
         msg.content = text
         if (s.firstTokenAt === null && s.lastSendStartedAt !== null) {
@@ -283,6 +288,9 @@ export const useChatStore = defineStore('chat', () => {
           )
         }
       }
+      // Always update thinking (even when empty) so a previous
+      // thinking text is replaced with the current one.
+      msg.thinking = thinking
     } else if (type === 'message_end') {
       // keep streaming=true until turn_end
     } else if (type === 'turn_end') {

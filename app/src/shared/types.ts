@@ -27,6 +27,9 @@ export interface ChatMessage {
   id: string
   role: 'user' | 'agent' | 'system'
   content: string
+  /** M3 emits a separate thinking block before the visible text. Render it
+   *  in its own row (italic, dim) so the user sees the model is working. */
+  thinking?: string
   timestamp: number
   streaming?: boolean
   toolCall?: {

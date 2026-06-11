@@ -1,13 +1,23 @@
 /**
  * Headless Pi sidecar.
  *
- * Spawns a single Pi agent session and exposes it over HTTP + SSE on localhost.
+ * One process per agent. Exposes a single WebSocket endpoint for the main
+ * process to drive and observe the agent session.
  *
- * Endpoints:
- *   GET  /health    → { status, agent, cwd, port, readyAt }
- *   POST /message   body: { text: string }  → { ok: true, queued: true }
- *   GET  /events    → Server-Sent Events stream of agent events
- *   POST /abort     → { ok: true }
+ * Endpoints (HTTP, kept for boot probing only):
+ *   GET  /health   → { status, agent, cwd, port, readyAt }
+ *   GET  /         → 426 Upgrade Required
+ *
+ * WebSocket /ws (full-duplex):
+ *   C → S commands:
+ *     { type: 'send', text, streamingBehavior?: 'steer' | 'followUp' }
+ *     { type: 'abort' }
+ *     { type: 'ping' }
+ *   S → C events:
+ *     Agent event JSON (same shape as before). message_update events with
+ *     `assistantMessageEvent.type === 'text_delta'` are coalesced on the
+ *     server side — multiple deltas arriving within COALESCE_MS collapse
+ *     into a single outgoing frame so the renderer doesn't get flooded.
  *
  * Usage:
  *   PI_PORT=49152 PI_CWD=<dir-with-.pi/SYSTEM.md> node headless-pi.js
@@ -16,48 +26,80 @@
 import http from 'node:http'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { WebSocketServer, type WebSocket as WsSocket } from 'ws'
 import { createAgentSession } from '@earendil-works/pi-coding-agent'
 
 const PORT = parseInt(process.env['PI_PORT'] || '49152', 10)
 const CWD = process.env['PI_CWD'] || process.cwd()
-const AGENT_DIR = process.env['PI_AGENT_DIR'] // optional, defaults to ~/.pi/agent
+const AGENT_DIR = process.env['PI_AGENT_DIR']
+const COALESCE_MS = parseInt(process.env['PI_COALESCE_MS'] || '30', 10)
 
 const t0 = Date.now()
 const markers: Record<string, number> = {}
 
-interface SSEClient {
-  id: number
-  res: http.ServerResponse
+// ----- Outgoing coalescing for text_delta events -----
+//
+// We buffer the LATEST text_delta per contentIndex and flush once per
+// COALESCE_MS. Non-text_delta events flush immediately and reset the
+// buffer for that contentIndex.
+type OutgoingFrame = { type: string; [k: string]: unknown }
+const pendingTextDeltas = new Map<number, OutgoingFrame>()
+let flushTimer: NodeJS.Timeout | null = null
+
+function scheduleFlush(): void {
+  if (flushTimer) return
+  flushTimer = setTimeout(flushNow, COALESCE_MS)
+}
+function flushNow(): void {
+  flushTimer = null
+  if (pendingTextDeltas.size === 0) return
+  for (const frame of pendingTextDeltas.values()) {
+    sendToAll(frame)
+  }
+  pendingTextDeltas.clear()
+}
+function flushImmediately(): void {
+  if (flushTimer) {
+    clearTimeout(flushTimer)
+    flushTimer = null
+  }
+  flushNow()
 }
 
-const clients = new Set<SSEClient>()
-let nextClientId = 1
+function isTextDeltaEvent(e: { type: string; [k: string]: unknown }): boolean {
+  if (e.type !== 'message_update') return false
+  const ame = e['assistantMessageEvent'] as { type?: string; contentIndex?: number } | undefined
+  return ame?.type === 'text_delta' && typeof ame.contentIndex === 'number'
+}
 
-function broadcast(event: { type: string; [k: string]: unknown }): void {
-  const payload = `data: ${JSON.stringify(event)}\n\n`
-  for (const c of clients) {
-    try {
-      c.res.write(payload)
-    } catch {
-      clients.delete(c)
-    }
+function dispatchOutgoing(event: OutgoingFrame): void {
+  if (isTextDeltaEvent(event)) {
+    const ame = event['assistantMessageEvent'] as { contentIndex: number }
+    pendingTextDeltas.set(ame.contentIndex, event)
+    scheduleFlush()
+  } else {
+    // Structural / important event: flush any pending text first so the
+    // order is preserved, then send this event.
+    flushImmediately()
+    sendToAll(event)
   }
 }
 
-function readJson<T = unknown>(req: http.IncomingMessage): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = []
-    req.on('data', (c) => chunks.push(c as Buffer))
-    req.on('end', () => {
+// ----- WebSocket connection management -----
+const sockets = new Set<WsSocket>()
+let nextClientId = 1
+
+function sendToAll(event: OutgoingFrame): void {
+  const payload = JSON.stringify(event)
+  for (const s of sockets) {
+    if (s.readyState === s.OPEN) {
       try {
-        const text = Buffer.concat(chunks).toString('utf-8')
-        resolve(text ? (JSON.parse(text) as T) : ({} as T))
-      } catch (err) {
-        reject(err)
+        s.send(payload)
+      } catch {
+        sockets.delete(s)
       }
-    })
-    req.on('error', reject)
-  })
+    }
+  }
 }
 
 function jsonResponse(res: http.ServerResponse, status: number, body: unknown): void {
@@ -66,74 +108,52 @@ function jsonResponse(res: http.ServerResponse, status: number, body: unknown): 
   res.end(JSON.stringify(body))
 }
 
-function startSse(res: http.ServerResponse): SSEClient {
-  res.statusCode = 200
-  res.setHeader('Content-Type', 'text/event-stream')
-  res.setHeader('Cache-Control', 'no-cache, no-transform')
-  res.setHeader('Connection', 'keep-alive')
-  res.setHeader('X-Accel-Buffering', 'no')
-  res.writeHead(200)
-  res.write(': pi-atrium headless-pi\n\n')
-  const client: SSEClient = { id: nextClientId++, res }
-  clients.add(client)
-  return client
-}
-
 async function ensureSystemPromptSymlink(cwd: string): Promise<void> {
   // Pi reads <cwd>/.pi/SYSTEM.md automatically. If our SYSTEM.md isn't there,
-  // symlink it. (We don't write to the user's vault here — the app does that later.)
+  // symlink it.
   const piDir = path.join(cwd, '.pi')
   const target = path.join(piDir, 'SYSTEM.md')
   try {
     await fs.access(target)
-    return // already exists
+    return
   } catch {
-    // not present — create symlink
-    await fs.mkdir(piDir, { recursive: true })
-    // The actual SYSTEM.md content lives in resources/system/ of the app.
-    // For dev, point to a relative path; for prod, the app passes an absolute path.
-    const source = process.env['PI_SYSTEM_PROMPT']
-    if (!source) return
-    try {
-      await fs.symlink(source, target)
-    } catch (err) {
-      console.warn('[headless-pi] could not symlink SYSTEM.md:', (err as Error).message)
-    }
+    /* fall through */
+  }
+  await fs.mkdir(piDir, { recursive: true })
+  const source = process.env['PI_SYSTEM_PROMPT']
+  if (!source) return
+  try {
+    await fs.symlink(source, target)
+  } catch (err) {
+    console.warn('[headless-pi] could not symlink SYSTEM.md:', (err as Error).message)
   }
 }
 
 async function main(): Promise<void> {
   markers['start'] = Date.now() - t0
-  console.log(`[headless-pi] boot: PORT=${PORT} CWD=${CWD} PID=${process.pid}`)
+  console.log(`[headless-pi] boot: PORT=${PORT} CWD=${CWD} PID=${process.pid} COALESCE_MS=${COALESCE_MS}`)
 
-  // Ensure cwd/.pi/SYSTEM.md exists (symlink to bundled persona)
   await ensureSystemPromptSymlink(CWD)
   markers['systemPrompt'] = Date.now() - t0
   console.log(`[headless-pi] system prompt ready (${markers['systemPrompt']}ms)`)
 
-  // Build a custom resource loader that injects the SYSTEM.md content
-  // (we skip this for Task 0.2 — the symlink above is enough for now)
   const sessionOptions = {
     cwd: CWD,
     ...(AGENT_DIR ? { agentDir: AGENT_DIR } : {}),
   }
   markers['optionsBuilt'] = Date.now() - t0
 
-  // Create the agent session
   const { session } = await createAgentSession(sessionOptions)
   markers['agentCreated'] = Date.now() - t0
   console.log(`[headless-pi] agent session created (${markers['agentCreated']}ms)`)
 
-  // Subscribe to events; forward via SSE
+  // Forward agent events to all WS clients (with text_delta coalescing).
   const unsubscribe = session.subscribe((event) => {
-    // Forward the entire event as JSON. The renderer knows the schema.
-    // (Event fields observed: type, messageStart, messageUpdate, messageEnd, turnEnd, etc.)
-    broadcast(event as unknown as { type: string; [k: string]: unknown })
+    dispatchOutgoing(event as unknown as OutgoingFrame)
   })
 
-  // HTTP server
+  // HTTP + WS server on the same port. /ws upgrades to WebSocket.
   const server = http.createServer(async (req, res) => {
-    // CORS (renderer on a different port during dev)
     res.setHeader('Access-Control-Allow-Origin', '*')
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
@@ -152,59 +172,111 @@ async function main(): Promise<void> {
         port: PORT,
         readyAt: markers['agentCreated'],
         markers,
+        protocol: 'ws',
       })
       return
     }
 
-    if (req.method === 'GET' && url.pathname === '/events') {
-      const client = startSse(res)
-      req.on('close', () => {
-        clients.delete(client)
-      })
-      return
-    }
+    // Anything else over plain HTTP: tell the client to upgrade.
+    res.statusCode = 426
+    res.setHeader('Content-Type', 'application/json')
+    res.setHeader('Upgrade', 'websocket')
+    res.end(JSON.stringify({ error: 'WebSocket required', upgradeTo: `ws://127.0.0.1:${PORT}/ws` }))
+  })
 
-    if (req.method === 'POST' && url.pathname === '/message') {
+  const wss = new WebSocketServer({ noServer: true })
+  wss.on('connection', (ws: WsSocket) => {
+    const id = nextClientId++
+    sockets.add(ws)
+    console.log(`[headless-pi] ws client #${id} connected (${sockets.size} total)`)
+
+    ws.on('message', async (data) => {
+      let msg: { type?: string; [k: string]: unknown } | null = null
       try {
-        const body = await readJson<{ text?: string; streamingBehavior?: 'steer' | 'followUp' }>(req)
-        const text = (body.text || '').trim()
-        if (!text) return jsonResponse(res, 400, { error: 'text required' })
-        // Fire and forget — events stream via SSE.
-        // streamingBehavior:
-        //   'steer'    — redirect the current response mid-flight
-        //   'followUp' — wait for the current turn to finish, then process this
-        // Default to 'followUp' so that sending a message while the agent is
-        // busy queues it instead of erroring out.
-        const streamingBehavior: 'steer' | 'followUp' =
-          body.streamingBehavior === 'steer' ? 'steer' : 'followUp'
-        session.prompt(text, { streamingBehavior }).catch((err: Error) => {
-          broadcast({ type: 'prompt_error', message: err.message })
-        })
-        return jsonResponse(res, 202, { ok: true, queued: true })
-      } catch (err) {
-        return jsonResponse(res, 400, { error: (err as Error).message })
+        msg = JSON.parse(data.toString('utf-8')) as { type?: string }
+      } catch {
+        ws.send(JSON.stringify({ type: 'error', message: 'invalid JSON' }))
+        return
       }
-    }
+      if (!msg || typeof msg.type !== 'string') return
 
-    if (req.method === 'POST' && url.pathname === '/abort') {
-      try {
-        if (typeof session.abort === 'function') {
-          await session.abort()
+      switch (msg.type) {
+        case 'send': {
+          const text = typeof msg.text === 'string' ? msg.text.trim() : ''
+          if (!text) {
+            ws.send(JSON.stringify({ type: 'error', message: 'text required' }))
+            return
+          }
+          const streamingBehavior: 'steer' | 'followUp' =
+            msg.streamingBehavior === 'steer' ? 'steer' : 'followUp'
+          // Fire and forget — events stream back over WS.
+          session.prompt(text, { streamingBehavior }).catch((err: Error) => {
+            dispatchOutgoing({ type: 'prompt_error', message: err.message })
+          })
+          ws.send(JSON.stringify({ type: 'sent', ok: true, queued: true }))
+          break
         }
-        return jsonResponse(res, 200, { ok: true })
-      } catch (err) {
-        return jsonResponse(res, 500, { error: (err as Error).message })
+        case 'abort': {
+          try {
+            if (typeof session.abort === 'function') {
+              await session.abort()
+            }
+            ws.send(JSON.stringify({ type: 'aborted', ok: true }))
+          } catch (err) {
+            ws.send(JSON.stringify({ type: 'error', message: (err as Error).message }))
+          }
+          break
+        }
+        case 'ping': {
+          ws.send(JSON.stringify({ type: 'pong', t: Date.now() }))
+          break
+        }
+        default:
+          ws.send(JSON.stringify({ type: 'error', message: `unknown command: ${msg.type}` }))
       }
-    }
+    })
 
-    jsonResponse(res, 404, { error: 'not found' })
+    ws.on('close', () => {
+      sockets.delete(ws)
+      console.log(`[headless-pi] ws client #${id} disconnected (${sockets.size} total)`)
+    })
+
+    ws.on('error', (err: Error) => {
+      console.warn(`[headless-pi] ws client #${id} error:`, err.message)
+      sockets.delete(ws)
+    })
+  })
+
+  server.on('upgrade', (req, socket, head) => {
+    const url = new URL(req.url || '/', `http://localhost:${PORT}`)
+    if (url.pathname === '/ws') {
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        wss.emit('connection', ws, req)
+      })
+    } else {
+      socket.destroy()
+    }
   })
 
   server.listen(PORT, '127.0.0.1', () => {
     markers['listening'] = Date.now() - t0
-    console.log(`[headless-pi] listening on http://127.0.0.1:${PORT}`)
+    console.log(`[headless-pi] listening on http://127.0.0.1:${PORT} (ws on /ws)`)
     console.log(`[headless-pi] spawn markers: ${JSON.stringify(markers)}`)
   })
+
+  // Heartbeat: detect dead WS clients. Server pings every 30s.
+  const heartbeat = setInterval(() => {
+    for (const s of sockets) {
+      if (s.readyState === s.OPEN) {
+        try {
+          ;(s as WsSocket & { ping?: () => void }).ping?.()
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  }, 30_000)
+  heartbeat.unref()
 
   // Graceful shutdown
   const shutdown = (signal: string) => {
@@ -214,14 +286,17 @@ async function main(): Promise<void> {
     } catch (err) {
       console.warn('[headless-pi] unsubscribe error:', (err as Error).message)
     }
-    for (const c of clients) {
-      try { c.res.end() } catch { /* ignore */ }
+    for (const s of sockets) {
+      try { s.close(1001, 'shutting down') } catch { /* ignore */ }
     }
-    server.close(() => {
-      console.log('[headless-pi] closed')
-      process.exit(0)
+    clearInterval(heartbeat)
+    if (flushTimer) clearTimeout(flushTimer)
+    wss.close(() => {
+      server.close(() => {
+        console.log('[headless-pi] closed')
+        process.exit(0)
+      })
     })
-    // Hard exit after 5s
     setTimeout(() => process.exit(0), 5000).unref()
   }
   process.on('SIGTERM', () => shutdown('SIGTERM'))

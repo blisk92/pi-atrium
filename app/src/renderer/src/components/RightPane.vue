@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { useAppStore } from '../stores/app'
 import { useChatStore } from '../stores/chat'
 import { useSessionStore } from '../stores/sessions'
+import { useSkillStore } from '../stores/skills'
 import TreeNode, { type TreeNodeData } from './TreeNode.vue'
 
 type Pane = 'files' | 'brain' | 'skills' | 'activity'
@@ -11,6 +12,7 @@ const active = ref<Pane>('files')
 const appStore = useAppStore()
 const chat = useChatStore()
 const sessions = useSessionStore()
+const skills = useSkillStore()
 
 const tabs: Array<{ id: Pane; label: string }> = [
   { id: 'files', label: 'Files' },
@@ -104,19 +106,9 @@ const fileTree: TreeNodeData[] = [
   },
 ]
 
-// ----- Mock skills (real skill management is Wave 4) -----
-interface Skill {
-  name: string
-  description: string
-  enabled: boolean
-  source: 'builtin' | 'user' | 'agent'
-}
-const skills: Skill[] = [
-  { name: 'obsidian_retrieve', description: 'Search and read Obsidian vault notes', enabled: false, source: 'builtin' },
-  { name: 'app_context', description: 'Inspect app state (teams, agents, sessions)', enabled: false, source: 'builtin' },
-  { name: 'skill-manager', description: 'Add or remove skills on the current agent', enabled: false, source: 'builtin' },
-  { name: 'pi-intercom', description: 'Talk to other Pi agents', enabled: false, source: 'builtin' },
-]
+// ----- Skills (Wave 4 / Task 4.1) -----
+// Imported above as `useSkillStore`. The hardcoded `skills` array was
+// replaced by the store-driven view.
 
 // ----- Activity log (real-time from chat) -----
 const activity = computed(() => {
@@ -237,11 +229,22 @@ const activity = computed(() => {
       <div v-show="active === 'skills'" class="tab-pane">
         <div class="pane-header">
           <span class="pane-title">Skills</span>
-          <span class="pane-subtitle">{{ skills.filter(s => s.enabled).length }} of {{ skills.length }} on</span>
+          <span class="pane-subtitle">
+            <template v-if="sessions.activeId">
+              {{ skills.countOn(sessions.activeId) }} of {{ skills.allSkills.length }} on
+              <span v-if="sessions.activeSession" class="mono"> · {{ sessions.activeSession.name }}</span>
+            </template>
+            <template v-else>—</template>
+          </span>
         </div>
         <div class="skills-list">
-          <div v-for="s in skills" :key="s.name" class="skill-row">
-            <div class="skill-toggle" :class="{ on: s.enabled }">
+          <div v-for="s in skills.allSkills" :key="s.name" class="skill-row">
+            <div
+              class="skill-toggle"
+              :class="{ on: sessions.activeId ? skills.isEnabled(sessions.activeId, s.name) : false }"
+              :title="(sessions.activeId && skills.isEnabled(sessions.activeId, s.name)) ? 'Skill on' : 'Skill off'"
+              @click="sessions.activeId && skills.toggle(sessions.activeId, s.name)"
+            >
               <div class="toggle-knob"></div>
             </div>
             <div class="skill-info">
@@ -252,7 +255,7 @@ const activity = computed(() => {
           </div>
         </div>
         <div class="pane-footer">
-          <span>Real skill management → Wave 4</span>
+          <span>Custom skills → Task 4.2 · Self-extend → Task 4.3</span>
         </div>
       </div>
 

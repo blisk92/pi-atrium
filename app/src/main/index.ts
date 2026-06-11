@@ -746,6 +746,70 @@ app.whenReady().then(async () => {
       return { ok: false, error: (err as Error).message }
     }
   })
+  ipcMain.handle('agents:listSkills', async (_evt, agentId: string) => {
+    const s = sessions.get(agentId)
+    if (!s) return { ok: false, error: 'no such session', skills: [] }
+    // Resolve agentDir lazily (same logic as agents:brain).
+    let agentDir = s.agentDir
+    if (!agentDir) {
+      const appPath = app.getAppPath()
+      const runtimeBase = app.isPackaged
+        ? path.join(app.getPath('userData'), 'sessions')
+        : path.join(appPath, '.runtime', 'sessions')
+      agentDir = path.join(runtimeBase, s.id)
+      s.agentDir = agentDir
+    }
+    const skillsDir = path.join(agentDir, '.pi', 'skills')
+    let entries: import('node:fs').Dirent[]
+    try {
+      entries = await fs.readdir(skillsDir, { withFileTypes: true })
+    } catch {
+      return { ok: true, skills: [] }
+    }
+    const skills: Array<{ name: string; description: string; source: 'agent' }> = []
+    for (const e of entries) {
+      if (!e.isDirectory()) continue
+      const skillFile = path.join(skillsDir, e.name, 'SKILL.md')
+      try {
+        const raw = await fs.readFile(skillFile, 'utf-8')
+        const parsed = parseSkillFrontmatter(raw)
+        if (parsed.name) {
+          skills.push({
+            name: parsed.name,
+            description: parsed.description || '(no description)',
+            source: 'agent',
+          })
+        } else {
+          skills.push({ name: e.name, description: '(no description)', source: 'agent' })
+        }
+      } catch {
+        skills.push({ name: e.name, description: '(unreadable)', source: 'agent' })
+      }
+    }
+    return { ok: true, skills }
+  })
+
+  // Tiny YAML frontmatter parser for SKILL.md (just name + description).
+  function parseSkillFrontmatter(raw: string): { name?: string; description?: string } {
+    if (!raw.startsWith('---')) return {}
+    const end = raw.indexOf('\n---', 3)
+    if (end < 0) return {}
+    const block = raw.slice(3, end)
+    const out: { name?: string; description?: string } = {}
+    for (const line of block.split('\n')) {
+      const m = /^(\w+):\s*(.*)$/.exec(line)
+      if (!m) continue
+      const key = m[1]
+      let val = m[2].trim()
+      if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1)
+      if (val.startsWith("'") && val.endsWith("'")) val = val.slice(1, -1)
+      if (key === 'name' || key === 'description') {
+        out[key as 'name' | 'description'] = val
+      }
+    }
+    return out
+  }
+
   ipcMain.handle('agents:brain:recall', async (_evt, agentId: string, query: string) => {
     const s = sessions.get(agentId)
     if (!s?.agentDir) return { ok: false, matches: [] as string[] }

@@ -54,6 +54,7 @@ watch(
   ([a, id]) => {
     if (a === 'brain' && id) void loadBrain()
     if (a === 'files' && id) void loadFileTree()
+    if (a === 'skills' && id) void skills.refresh(id)
   },
   { immediate: true }
 )
@@ -221,14 +222,14 @@ const activity = computed(() => {
           <span class="pane-title">Skills</span>
           <span class="pane-subtitle">
             <template v-if="sessions.activeId">
-              {{ skills.countOn(sessions.activeId) }} of {{ skills.allSkills.length }} on
+              {{ skills.countOn(sessions.activeId) }} of {{ skills.skillsFor(sessions.activeId).length }} on
               <span v-if="sessions.activeSession" class="mono"> · {{ sessions.activeSession.name }}</span>
             </template>
             <template v-else>—</template>
           </span>
         </div>
         <div class="skills-list">
-          <div v-for="s in skills.allSkills" :key="s.name" class="skill-row">
+          <div v-for="s in skills.skillsFor(sessions.activeId)" :key="s.name" class="skill-row">
             <div
               class="skill-toggle"
               :class="{ on: sessions.activeId ? skills.isEnabled(sessions.activeId, s.name) : false }"
@@ -242,6 +243,13 @@ const activity = computed(() => {
               <div class="skill-desc">{{ s.description }}</div>
             </div>
             <span class="skill-source" :class="'src-' + s.source">{{ s.source }}</span>
+          </div>
+          <div v-if="sessions.activeId && (skills as any).customByAgent?.[sessions.activeId]?.loading" class="skills-loading">
+            Loading agent skills…
+          </div>
+          <div v-if="sessions.activeId && (skills as any).customByAgent?.[sessions.activeId]?.loadedFor === sessions.activeId
+            && (skills as any).customByAgent?.[sessions.activeId]?.skills.length === 0" class="skills-empty">
+            No custom skills for this agent.
           </div>
         </div>
         <div class="pane-footer">

@@ -120,6 +120,8 @@ const api = {
   agents: {
     brain: (agentId: string): Promise<BrainState | null> =>
       ipcRenderer.invoke('agents:brain', agentId),
+    listSkills: (agentId: string): Promise<{ ok: boolean; skills: { name: string; description: string; source: 'agent' }[]; error?: string }> =>
+      ipcRenderer.invoke('agents:listSkills', agentId),
     remember: (
       agentId: string,
       section: 'episodic' | 'semantic' | 'procedural' | 'working',

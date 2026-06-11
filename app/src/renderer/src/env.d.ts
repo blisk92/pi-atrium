@@ -68,6 +68,7 @@ interface PiAtriumAPI {
   }
   agents: {
     brain: (agentId: string) => Promise<BrainState | null>
+    listSkills: (agentId: string) => Promise<{ ok: boolean; skills: { name: string; description: string; source: 'agent' }[]; error?: string }>
     remember: (
       agentId: string,
       section: 'episodic' | 'semantic' | 'procedural' | 'working',

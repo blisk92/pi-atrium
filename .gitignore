@@ -37,6 +37,13 @@ out/
 coverage/
 .nyc_output/
 
+# Local dev tooling (Playwright, etc.) — heavy + machine-specific
+tools/*/node_modules/
+tools/*/.bin/
+tools/*/screenshots/
+tools/*/.package-lock.json
+# Keep tools/<name>/package.json + scripts under version control
+
 # Electron
 .electron-builder-cache/
 

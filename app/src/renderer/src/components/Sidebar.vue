@@ -11,6 +11,16 @@ const sessionList = computed(() => sessions.sessions)
 const teamList = computed(() => teams.teams)
 const activeId = computed(() => sessions.activeId)
 
+// SESSIONS list shows the concierge and any ad-hoc spawns, but NOT
+// team members — those live under their team in the TEAMS section.
+// (Team members are added to the global sessions registry so we can
+// talk to them via the chat pane, but presenting them in two places
+// is confusing.)
+const isTeamMember = (s: { id: string }): boolean => s.id.startsWith('team-')
+const visibleSessionList = computed(() =>
+  sessionList.value.filter((s) => !isTeamMember(s))
+)
+
 // Team expansion state (which team IDs are expanded)
 const expandedTeams = ref<Set<string>>(new Set())
 
@@ -95,7 +105,7 @@ function statusPillClass(s: string): string {
         <button class="spawn-btn" title="Spawn new session" @click="onSpawn">+</button>
       </div>
       <div
-        v-for="s in sessionList"
+        v-for="s in visibleSessionList"
         :key="s.id"
         class="session"
         :class="{ active: s.id === activeId }"
@@ -139,7 +149,7 @@ function statusPillClass(s: string): string {
           @click="(e) => onStop(s.id, e)"
         >×</button>
       </div>
-      <div v-if="sessionList.length === 0" class="empty">
+      <div v-if="visibleSessionList.length === 0" class="empty">
         <div class="spinner"></div>
         <p>Spawning concierge…</p>
       </div>
@@ -165,6 +175,28 @@ function statusPillClass(s: string): string {
           <span :class="statusPillClass(t.status)">{{ t.status }}</span>
         </div>
         <div v-if="expandedTeams.has(t.id)" class="team-body">
+          <div
+            v-for="m in t.members"
+            :key="m.id"
+            class="team-member"
+            :class="{ 'member-active': m.status === 'active' }"
+            @click="m.sessionId && sessions.select(m.sessionId)"
+          >
+            <span
+              class="status-dot"
+              :class="{
+                'dot-idle': m.status === 'draft',
+                'dot-starting': m.status === 'starting',
+                'dot-active': m.status === 'active',
+                'dot-error': m.status === 'error',
+              }"
+            ></span>
+            <div class="member-info">
+              <div class="member-name">{{ m.name }}</div>
+              <div class="member-role">{{ m.role }}</div>
+            </div>
+            <span v-if="m.port" class="member-port">{{ m.port }}</span>
+          </div>
           <div class="team-actions">
             <button
               v-if="t.status === 'draft' || t.status === 'error' || t.status === 'stopped'"

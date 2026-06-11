@@ -2,12 +2,24 @@
  * Pi Atrium — Electron main process entry point
  * Wave 0: spawn concierge headless Pi sidecar on app start
  * Wave 1 Task 1.3: multi-session registry (concierge = session #0, plus spawnable sessions)
+ * Wave 2: teams — define/run/halt a team of N agents
  */
 
 import { app, BrowserWindow, shell, ipcMain } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs/promises'
+import {
+  listTeams as storageListTeams,
+  readTeam as storageReadTeam,
+  writeTeam as storageWriteTeam,
+  deleteTeam as storageDeleteTeam,
+  setupMemberDir,
+  getMemberDir,
+  nextMemberId,
+  newTeamId,
+} from './teams.js'
+import type { Team } from '../shared/types.js'
 import http from 'node:http'
 import { spawnHeadlessPi, killHeadlessPi } from '../headless-pi/cli.js'
 
@@ -389,10 +401,279 @@ function createWindow(): void {
   })
 }
 
+// ----- Team registry (Wave 2) -----
+
+const teams = new Map<string, Team>()
+
+async function refreshTeam(teamId: string): Promise<Team | null> {
+  const t = await storageReadTeam(teamId)
+  if (t) teams.set(teamId, t)
+  else teams.delete(teamId)
+  broadcastTeams()
+  return t
+}
+void refreshTeam
+
+function broadcastTeams(): void {
+  if (!mainWindow || mainWindow.isDestroyed()) return
+  const list = Array.from(teams.values())
+  mainWindow.webContents.send('teams:update', list)
+}
+
+async function loadAllTeams(): Promise<void> {
+  const list = await storageListTeams()
+  teams.clear()
+  for (const t of list) teams.set(t.id, t)
+  broadcastTeams()
+}
+
+async function startTeamMembers(teamId: string): Promise<void> {
+  const team = teams.get(teamId)
+  if (!team) return
+  if (team.status === 'active' || team.status === 'starting') return
+
+  team.status = 'starting'
+  team.startedAt = Date.now()
+  for (const m of team.members) {
+    m.status = 'starting'
+    m.errorMessage = undefined
+  }
+  await storageWriteTeam(team)
+  broadcastTeams()
+
+  // Spawn one session per member, in parallel. Per-member port in the
+  // session range. The per-member folder is the sidecar's cwd.
+  const appPath = app.getAppPath()
+  const serverScriptPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'app', 'out', 'main', 'headless-pi-server.js')
+    : path.join(appPath, 'src', 'headless-pi', 'server.ts')
+
+  await Promise.all(
+    team.members.map(async (m) => {
+      try {
+        const memberFolder = getMemberDir(teamId, m.id)
+        const port = findFreePort(PORT_RANGE_START + 1)
+        const sessionId = `team-${teamId}-${m.id}`
+
+        const memberSession: Session = {
+          id: sessionId,
+          name: `${m.name} (${m.role})`,
+          role: m.role,
+          status: 'idle',
+          port,
+          isConcierge: false,
+          ttsEnabled: false,
+          sseReq: null,
+          memory: [],
+        }
+        sessions.set(sessionId, memberSession)
+        memberSession.status = 'starting'
+        broadcastSessions()
+
+        const { pid } = spawnHeadlessPi({
+          port,
+          cwd: memberFolder,
+          serverScriptPath,
+        })
+        memberSession.pid = pid
+        m.sessionId = sessionId
+        m.port = port
+        m.pid = pid
+        broadcastSessions()
+        broadcastTeams()
+
+        await pollSessionHealth(memberSession)
+        if ((memberSession.status as string) === 'active') {
+          m.status = 'active'
+          startSessionSse(memberSession)
+        } else {
+          m.status = 'error'
+          m.errorMessage = memberSession.errorMessage
+        }
+      } catch (err) {
+        m.status = 'error'
+        m.errorMessage = (err as Error).message
+        console.error(`[teams] failed to start member ${m.id}:`, err)
+      }
+      await storageWriteTeam(team)
+      broadcastTeams()
+    })
+  )
+
+  // After all members settle, mark the team
+  const allActive = team.members.every((m) => m.status === 'active')
+  team.status = allActive ? 'active' : 'error'
+  await storageWriteTeam(team)
+  broadcastTeams()
+}
+
+async function haltTeamMembers(teamId: string): Promise<void> {
+  const team = teams.get(teamId)
+  if (!team) return
+  if (team.status !== 'active' && team.status !== 'starting') return
+
+  team.status = 'stopping'
+  for (const m of team.members) {
+    m.status = (team.status === 'stopping' ? 'stopped' : 'stopping') as typeof m.status
+  }
+  // Note: MemberStatus doesn't include 'stopping' (only draft|starting|active|error|stopped),
+  // so we move members directly to 'stopped' before the final loop in the rest of this fn.
+  await storageWriteTeam(team)
+  broadcastTeams()
+
+  // Send SIGTERM to all members in parallel; wait 10s; force-quit any survivors.
+  const terminatePromises = team.members.map(async (m) => {
+    if (!m.sessionId) return
+    const s = sessions.get(m.sessionId)
+    if (!s) return
+    try {
+      // Best-effort graceful shutdown via the /abort endpoint (which is also
+      // what the slash-command /abort calls; for the actual brain-save
+      // window we'll wire that in Wave 3). For now, just kill the process.
+      process.kill(s.pid!, 'SIGTERM')
+    } catch {
+      /* ignore */
+    }
+  })
+  await Promise.all(terminatePromises)
+
+  // Wait up to 10s for processes to exit gracefully
+  const graceMs = 10_000
+  const start = Date.now()
+  while (Date.now() - start < graceMs) {
+    const allGone = team.members.every((m) => {
+      if (!m.sessionId) return true
+      const s = sessions.get(m.sessionId)
+      if (!s?.pid) return true
+      try {
+        process.kill(s.pid, 0) // signal 0 = check existence
+        return false
+      } catch {
+        return true
+      }
+    })
+    if (allGone) break
+    await new Promise((r) => setTimeout(r, 250))
+  }
+
+  // Force-quit any survivors and clean up session state
+  for (const m of team.members) {
+    if (!m.sessionId) continue
+    const s = sessions.get(m.sessionId)
+    if (s?.pid) {
+      try {
+        process.kill(s.pid, 'SIGKILL')
+      } catch {
+        /* ignore */
+      }
+    }
+    if (s?.sseReq) {
+      try {
+        s.sseReq.destroy()
+      } catch {
+        /* ignore */
+      }
+    }
+    sessions.delete(m.sessionId)
+    m.sessionId = undefined
+    m.port = undefined
+    m.pid = undefined
+    m.status = 'stopped'
+  }
+  team.status = 'stopped'
+  team.stoppedAt = Date.now()
+  await storageWriteTeam(team)
+  broadcastTeams()
+  broadcastSessions()
+}
+
 // ----- App lifecycle -----
 
 app.whenReady().then(async () => {
   markers['app.whenReady'] = Date.now() - t0
+
+  // --- Team IPC (Wave 2) ---
+  await loadAllTeams()
+  ipcMain.handle('teams:list', () => Array.from(teams.values()))
+  ipcMain.handle('teams:get', (_evt, id: string) => {
+    const t = teams.get(id)
+    return t || null
+  })
+  ipcMain.handle('teams:create', async (_evt, partial: Partial<Team>) => {
+    const team: Team = {
+      id: newTeamId(),
+      name: partial.name || 'Untitled Team',
+      description: partial.description || '',
+      cwd: partial.cwd || '',
+      status: 'draft',
+      members: (partial.members || []).map((m) => ({
+        ...m,
+        id: m.id || nextMemberId(),
+        status: 'draft' as const,
+      })),
+      createdAt: Date.now(),
+    }
+    // Set up per-member subfolders + SYSTEM.md
+    for (const m of team.members) {
+      try {
+        await setupMemberDir(team, m)
+      } catch (err) {
+        console.error(`[teams] failed to set up member ${m.id}:`, err)
+      }
+    }
+    await storageWriteTeam(team)
+    teams.set(team.id, team)
+    broadcastTeams()
+    return team
+  })
+  ipcMain.handle('teams:update', async (_evt, id: string, partial: Partial<Team>) => {
+    const t = teams.get(id)
+    if (!t) return null
+    // If running, only allow description/name/cwd updates — not membership.
+    if (t.status === 'active' || t.status === 'starting') {
+      const safe: Partial<Team> = {}
+      if (partial.name !== undefined) safe.name = partial.name
+      if (partial.description !== undefined) safe.description = partial.description
+      if (partial.cwd !== undefined) safe.cwd = partial.cwd
+      Object.assign(t, safe)
+    } else {
+      Object.assign(t, partial)
+      // If members changed, regenerate their SYSTEM.md
+      if (partial.members) {
+        for (const m of t.members) {
+          try {
+            await setupMemberDir(t, m)
+          } catch (err) {
+            console.error(`[teams] failed to refresh member ${m.id}:`, err)
+          }
+        }
+      }
+    }
+    await storageWriteTeam(t)
+    broadcastTeams()
+    return t
+  })
+  ipcMain.handle('teams:delete', async (_evt, id: string) => {
+    // Halt first if running
+    const t = teams.get(id)
+    if (t && (t.status === 'active' || t.status === 'starting')) {
+      await haltTeamMembers(id)
+    }
+    const ok = await storageDeleteTeam(id)
+    if (ok) {
+      teams.delete(id)
+      broadcastTeams()
+    }
+    return { ok }
+  })
+  ipcMain.handle('teams:start', async (_evt, id: string) => {
+    void startTeamMembers(id)
+    return { ok: true }
+  })
+  ipcMain.handle('teams:halt', async (_evt, id: string) => {
+    void haltTeamMembers(id)
+    return { ok: true }
+  })
 
   // --- Legacy single-concierge IPC (kept for back-compat) ---
   ipcMain.handle('concierge:get', () => sessionSnapshot(getConcierge() as Session))

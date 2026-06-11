@@ -6,6 +6,7 @@
 
 import type { ConciergeState } from './stores/app'
 import type { SessionSnapshot } from './stores/sessions'
+import type { Team } from '../../shared/types'
 
 interface ConciergeEvent {
   type: string
@@ -33,6 +34,16 @@ interface PiAtriumAPI {
     recall: (id: string, query: string) => Promise<{ ok: boolean; matches: string[]; error?: string }>
     onUpdate: (cb: (sessions: SessionSnapshot[]) => void) => () => void
     onEvent: (cb: (id: string, event: ConciergeEvent) => void) => () => void
+  }
+  teams: {
+    list: () => Promise<Team[]>
+    get: (id: string) => Promise<Team | null>
+    create: (partial: Partial<Team>) => Promise<Team>
+    update: (id: string, partial: Partial<Team>) => Promise<Team | null>
+    delete: (id: string) => Promise<{ ok: boolean }>
+    start: (id: string) => Promise<{ ok: boolean }>
+    halt: (id: string) => Promise<{ ok: boolean }>
+    onUpdate: (cb: (teams: Team[]) => void) => () => void
   }
 }
 

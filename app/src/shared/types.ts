@@ -35,3 +35,46 @@ export interface ChatMessage {
     durationMs?: number
   }
 }
+
+// ----- Wave 2: Teams -----
+
+export type TeamStatus =
+  | 'draft'
+  | 'starting'
+  | 'active'
+  | 'stopping'
+  | 'stopped'
+  | 'error'
+
+export type MemberStatus =
+  | 'draft'
+  | 'starting'
+  | 'active'
+  | 'error'
+  | 'stopped'
+
+export interface TeamMember {
+  id: string
+  name: string
+  role: string
+  initialTask: string
+  /** When running, the session ID assigned to this member. */
+  sessionId?: string
+  status: MemberStatus
+  port?: number
+  pid?: number
+  errorMessage?: string
+}
+
+export interface Team {
+  id: string
+  name: string
+  description: string
+  /** CWD for the team. Empty string = use default (vault / app dir). */
+  cwd: string
+  status: TeamStatus
+  members: TeamMember[]
+  createdAt: number
+  startedAt?: number
+  stoppedAt?: number
+}

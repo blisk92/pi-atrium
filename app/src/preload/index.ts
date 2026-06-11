@@ -5,6 +5,7 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron'
+import type { Team } from '../shared/types.js'
 
 interface ConciergeState {
   status: 'idle' | 'starting' | 'active' | 'error'
@@ -77,6 +78,22 @@ const api = {
       ) => cb(payload.sessionId, payload.event)
       ipcRenderer.on('sessions:event', listener)
       return () => ipcRenderer.removeListener('sessions:event', listener)
+    },
+  },
+  teams: {
+    list: (): Promise<Team[]> => ipcRenderer.invoke('teams:list'),
+    get: (id: string): Promise<Team | null> => ipcRenderer.invoke('teams:get', id),
+    create: (partial: Partial<Team>): Promise<Team> =>
+      ipcRenderer.invoke('teams:create', partial),
+    update: (id: string, partial: Partial<Team>): Promise<Team | null> =>
+      ipcRenderer.invoke('teams:update', id, partial),
+    delete: (id: string): Promise<{ ok: boolean }> => ipcRenderer.invoke('teams:delete', id),
+    start: (id: string): Promise<{ ok: boolean }> => ipcRenderer.invoke('teams:start', id),
+    halt: (id: string): Promise<{ ok: boolean }> => ipcRenderer.invoke('teams:halt', id),
+    onUpdate: (cb: (teams: Team[]) => void): (() => void) => {
+      const listener = (_evt: unknown, list: Team[]) => cb(list)
+      ipcRenderer.on('teams:update', listener)
+      return () => ipcRenderer.removeListener('teams:update', listener)
     },
   },
 }

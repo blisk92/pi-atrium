@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pi Atrium — Concept 2: The Quorum (Workspaces + Tabs)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F172A;
+    --surface: #1E293B;
+    --surface-2: #334155;
+    --border: #334155;
+    --text: #F8FAFC;
+    --text-dim: #94A3B8;
+    --text-faint: #64748B;
+    --accent: #22C55E;
+    --accent-dim: #16A34A;
+    --warn: #F59E0B;
+    --error: #EF4444;
+    --info: #38BDF8;
+    --radius: 6px;
+    --transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  code, .mono { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+  .app { display: grid; grid-template-rows: 48px 1fr; height: 100vh; }
+
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: stretch;
+    padding: 0 12px;
+    gap: 4px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding-right: 12px;
+    border-right: 1px solid var(--border);
+    margin-right: 6px;
+  }
+  .brand-logo {
+    width: 22px; height: 22px;
+    background: var(--accent);
+    border-radius: 5px;
+    display: grid; place-items: center;
+    color: var(--bg);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .brand-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+  }
+  .tabs { display: flex; align-items: stretch; gap: 2px; flex: 1; overflow-x: auto; }
+  .tab {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 14px;
+    background: transparent;
+    color: var(--text-dim);
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all var(--transition);
+    white-space: nowrap;
+  }
+  .tab:hover { background: rgba(255,255,255,0.03); color: var(--text); }
+  .tab.active {
+    color: var(--text);
+    border-bottom-color: var(--accent);
+    background: var(--bg);
+  }
+  .tab-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-faint);
+  }
+  .tab.active .tab-dot { background: var(--accent); }
+  .tab-dot.thinking { background: var(--info); animation: pulse 1.5s ease-in-out infinite; }
+  .tab-dot.attention { background: var(--accent); animation: pulse 1.5s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .tab-label { font-weight: 500; }
+  .tab-count {
+    background: var(--surface-2);
+    color: var(--text-dim);
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .tab.active .tab-count { background: var(--accent); color: var(--bg); font-weight: 700; }
+  .tab-add {
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 12px;
+    color: var(--text-faint);
+    border: none; background: transparent;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .tab-add:hover { color: var(--accent); }
+  .topbar-right { display: flex; align-items: center; gap: 4px; padding-left: 12px; border-left: 1px solid var(--border); margin-left: 6px; }
+  .icon-btn {
+    width: 32px; height: 32px;
+    background: transparent; border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    display: grid; place-items: center;
+    border-radius: var(--radius);
+    transition: all var(--transition);
+  }
+  .icon-btn:hover { background: var(--surface-2); color: var(--text); }
+
+  .main-row { display: grid; grid-template-columns: 220px 1fr 280px; overflow: hidden; }
+  .agents {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 12px 0;
+  }
+  .agents-header {
+    padding: 4px 16px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-faint);
+  }
+  .agent {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px;
+    cursor: pointer;
+    color: var(--text-dim);
+    border-left: 2px solid transparent;
+    transition: all var(--transition);
+  }
+  .agent:hover { background: rgba(255,255,255,0.03); color: var(--text); }
+  .agent.active {
+    background: rgba(34, 197, 94, 0.08);
+    color: var(--text);
+    border-left-color: var(--accent);
+  }
+  .agent-avatar-sm {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    display: grid; place-items: center;
+    font-size: 10px; font-weight: 700;
+  }
+  .agent-avatar-sm.concierge { background: var(--accent); color: var(--bg); }
+  .agent-name { font-size: 13px; flex: 1; }
+  .agent-status {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-faint);
+  }
+  .agent-status.thinking { background: var(--info); animation: pulse 1.5s ease-in-out infinite; }
+  .agent-status.attention { background: var(--accent); animation: pulse 1.5s ease-in-out infinite; }
+  .agent-status.error { background: var(--error); }
+  .agent .new-badge {
+    background: var(--accent);
+    color: var(--bg);
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: 700;
+  }
+
+  .chat-wrap { display: flex; flex-direction: column; overflow: hidden; }
+  .chat-topbar {
+    padding: 10px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .chat-title { display: flex; align-items: center; gap: 10px; }
+  .chat-title-name { font-weight: 600; }
+  .chat-title-meta { font-size: 11px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; }
+  .chat-actions { display: flex; align-items: center; gap: 6px; }
+  .skills-pill {
+    padding: 4px 10px;
+    background: var(--surface-2);
+    border-radius: 12px;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .chat {
+    flex: 1; overflow-y: auto;
+    padding: 24px 32px;
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  .message { max-width: 720px; }
+  .msg-role {
+    font-size: 11px;
+    color: var(--text-faint);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .msg-role.user { color: var(--info); }
+  .msg-role.agent { color: var(--accent); }
+  .msg-body p { margin-bottom: 10px; }
+  .msg-body code {
+    background: var(--surface-2);
+    padding: 1px 6px;
+    border-radius: 3px;
+    color: var(--accent);
+  }
+  .msg-tool {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .msg-tool svg { color: var(--info); }
+  .input-area {
+    padding: 16px 32px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .input-box {
+    display: flex; align-items: flex-end; gap: 10px;
+    padding: 12px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: border-color var(--transition);
+  }
+  .input-box:focus-within { border-color: var(--accent); }
+  .input-box textarea {
+    flex: 1; resize: none; background: transparent; border: none; outline: none;
+    color: var(--text); font-family: inherit; font-size: 14px;
+    min-height: 22px; max-height: 200px;
+  }
+  .input-hint {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--text-faint);
+    font-family: 'JetBrains Mono', monospace;
+    display: flex; justify-content: space-between;
+  }
+  .input-hint kbd {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: 10px;
+  }
+
+  .drawer {
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+  }
+  .drawer-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+  }
+  .drawer-tab {
+    flex: 1;
+    padding: 10px 8px;
+    background: transparent;
+    color: var(--text-faint);
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+  }
+  .drawer-tab.active {
+    color: var(--text);
+    border-bottom-color: var(--accent);
+  }
+  .drawer-body { padding: 8px 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .ft-node { display: flex; align-items: center; gap: 6px; padding: 3px 16px; cursor: pointer; color: var(--text-dim); }
+  .ft-node:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+  .ft-node.dir { color: var(--text); }
+  .ft-node .indent-1 { padding-left: 32px; }
+  .ft-node .indent-2 { padding-left: 52px; }
+  .ft-node .indent-3 { padding-left: 72px; }
+  .ft-node svg { flex-shrink: 0; opacity: 0.7; }
+  .drawer-footer {
+    padding: 10px 16px;
+    border-top: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--text-faint);
+    display: flex; justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-logo">π</div>
+      <div class="brand-name">Pi Atrium</div>
+    </div>
+    <div class="tabs">
+      <button class="tab active">
+        <span class="tab-dot attention"></span>
+        <span class="tab-label">Concierge</span>
+      </button>
+      <button class="tab">
+        <span class="tab-dot thinking"></span>
+        <span class="tab-label">Q3 Shoot</span>
+        <span class="tab-count">4</span>
+      </button>
+      <button class="tab">
+        <span class="tab-dot"></span>
+        <span class="tab-label">Research Crew</span>
+        <span class="tab-count">2</span>
+      </button>
+      <button class="tab">
+        <span class="tab-dot"></span>
+        <span class="tab-label">Daily Notes</span>
+        <span class="tab-count">1</span>
+      </button>
+      <button class="tab-add">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        New
+      </button>
+    </div>
+    <div class="topbar-right">
+      <button class="icon-btn" title="Toggle drawer">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+      </button>
+      <button class="icon-btn" title="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="main-row">
+
+    <aside class="agents">
+      <div class="agents-header">In This Workspace</div>
+      <div class="agent">
+        <div class="agent-avatar-sm concierge">★</div>
+        <div class="agent-name">Concierge</div>
+        <div class="agent-status attention"></div>
+      </div>
+
+      <div class="agents-header">Members</div>
+      <div class="agent active">
+        <div class="agent-avatar-sm">FS</div>
+        <div class="agent-name">Feasibility</div>
+        <div class="agent-status thinking"></div>
+      </div>
+      <div class="agent">
+        <div class="agent-avatar-sm">SL</div>
+        <div class="agent-name">Shotlist</div>
+        <div class="agent-status"></div>
+      </div>
+      <div class="agent">
+        <div class="agent-avatar-sm">SB</div>
+        <div class="agent-name">Storyboard</div>
+        <div class="agent-status error"></div>
+      </div>
+      <div class="agent">
+        <div class="agent-avatar-sm">RC</div>
+        <div class="agent-name">Recce</div>
+        <div class="agent-status"></div>
+        <span class="new-badge">NEW</span>
+      </div>
+    </aside>
+
+    <main class="chat-wrap">
+      <div class="chat-topbar">
+        <div class="chat-title">
+          <div class="agent-avatar-sm" style="width:28px;height:28px;font-size:12px;background:var(--accent);color:var(--bg);">FS</div>
+          <div>
+            <div class="chat-title-name">Feasibility</div>
+            <div class="chat-title-meta">t-002 · GPT-4 · 5 skills · 12 turns</div>
+          </div>
+        </div>
+        <div class="chat-actions">
+          <span class="skills-pill">5 skills</span>
+          <button class="icon-btn" title="Voice on">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          </button>
+          <button class="icon-btn" title="More">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="chat">
+        <div class="message">
+          <div class="msg-role user">YOU · 10:42</div>
+          <div class="msg-body">
+            <p>What are the access constraints for the cricket club location?</p>
+          </div>
+        </div>
+
+        <div class="message">
+          <div class="msg-role agent">FEASIBILITY · 10:42</div>
+          <div class="msg-body">
+            <p>Based on the recce notes and venue documentation, here are the key constraints I've identified:</p>
+            <p><strong>Access:</strong> Main gate only, 8am-6pm. East entrance locked after 4pm. <strong>Power:</strong> Outdoor outlets are 30m+ from shooting positions. <strong>Sound:</strong> Adjacent tennis courts until 7pm — expect ambient noise.</p>
+          </div>
+          <div class="msg-tool">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <code>obsidian_retrieve</code> · 3 results · 247ms
+          </div>
+        </div>
+      </div>
+
+      <div class="input-area">
+        <div class="input-box">
+          <button class="icon-btn" title="Push to talk">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10a7 7 0 0 1-14 0M12 17v4M8 21h8"/></svg>
+          </button>
+          <textarea placeholder="Message Feasibility…" rows="1"></textarea>
+          <button class="icon-btn" title="Send">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          </button>
+        </div>
+        <div class="input-hint">
+          <span><kbd>Enter</kbd> send · <kbd>Ctrl+Space</kbd> push-to-talk</span>
+          <span>Workspace: Q3 Shoot · CWD: <code>Projects/Q3 Shoot/</code></span>
+        </div>
+      </div>
+    </main>
+
+    <aside class="drawer">
+      <div class="drawer-tabs">
+        <button class="drawer-tab active">Files</button>
+        <button class="drawer-tab">Brain</button>
+        <button class="drawer-tab">Skills</button>
+      </div>
+      <div class="drawer-body">
+        <div class="ft-node dir">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          Projects/Q3 Shoot
+        </div>
+        <div class="ft-node dir indent-1">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          notes
+        </div>
+        <div class="ft-node indent-2">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          feasibility.md
+        </div>
+        <div class="ft-node indent-2">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          recce-checklist.md
+        </div>
+        <div class="ft-node dir indent-1">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          references
+        </div>
+        <div class="ft-node indent-2">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          style-brief.md
+        </div>
+        <div class="ft-node indent-1">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          PRD.md
+        </div>
+        <div class="ft-node indent-1">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          tasks.md
+        </div>
+      </div>
+      <div class="drawer-footer">
+        <span>9 items</span>
+        <span>● watching</span>
+      </div>
+    </aside>
+  </div>
+</div>
+</body>
+</html>

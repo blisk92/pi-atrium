@@ -1,0 +1,20 @@
+# Force LF line endings for source code, CRLF for Windows-style files
+* text=auto eol=lf
+
+# Explicitly normalize key file types
+*.md       text eol=lf
+*.html     text eol=lf
+*.css      text eol=lf
+*.js       text eol=lf
+*.ts       text eol=lf
+*.json     text eol=lf
+
+# Binary files (don't touch)
+*.png      binary
+*.jpg      binary
+*.jpeg     binary
+*.gif      binary
+*.ico      binary
+*.pdf      binary
+*.woff     binary
+*.woff2    binary

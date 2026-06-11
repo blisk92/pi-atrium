@@ -26,6 +26,7 @@ import {
   searchBrain,
   type BrainState,
 } from './brain.js'
+import { synthesizeSpeech, transcribeAudio } from './tts.js'
 import type { Team } from '../shared/types.js'
 // Note: readBrain/addBrainEntry/searchBrain are used by the Wave 3 IPC handlers
 void readBrain; void addBrainEntry; void searchBrain; void (null as unknown as BrainState)
@@ -743,6 +744,14 @@ app.whenReady().then(async () => {
     } catch (err) {
       return { ok: false, matches: [] as string[], error: (err as Error).message }
     }
+  })
+
+  // --- TTS (Wave 5 / Task 5.1) ---
+  ipcMain.handle('tts:speak', async (_evt, text: string, voice?: string) => {
+    return synthesizeSpeech(text, voice)
+  })
+  ipcMain.handle('tts:transcribe', async (_evt, audioPath: string) => {
+    return transcribeAudio(audioPath)
   })
 
   // --- Legacy single-concierge IPC (kept for back-compat) ---

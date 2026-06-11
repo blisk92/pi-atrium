@@ -78,6 +78,10 @@ interface PiAtriumAPI {
       query: string
     ) => Promise<{ ok: boolean; matches: { section: string; text: string }[] }>
   }
+  tts: {
+    speak: (text: string, voice?: string) => Promise<{ audioPath?: string; error?: string }>
+    transcribe: (audioPath: string) => Promise<{ text?: string; error?: string }>
+  }
 }
 
 declare global {

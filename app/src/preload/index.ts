@@ -132,6 +132,12 @@ const api = {
     ): Promise<{ ok: boolean; matches: { section: string; text: string }[] }> =>
       ipcRenderer.invoke('agents:brain:recall', agentId, query),
   },
+  tts: {
+    speak: (text: string, voice?: string): Promise<{ audioPath?: string; error?: string }> =>
+      ipcRenderer.invoke('tts:speak', text, voice),
+    transcribe: (audioPath: string): Promise<{ text?: string; error?: string }> =>
+      ipcRenderer.invoke('tts:transcribe', audioPath),
+  },
 }
 
 contextBridge.exposeInMainWorld('piAtrium', api)

@@ -12,6 +12,11 @@ const inputEl = ref<HTMLTextAreaElement | null>(null)
 
 let currentBoundId: string | null = null
 
+// TTS: when an agent message finishes streaming, if TTS is enabled for
+// the current session, speak the message aloud via the mmx TTS provider.
+const audioRef = ref<HTMLAudioElement | null>(null)
+const lastSpokenMessageId = ref<string | null>(null)
+
 function rebind(id: string | null): void {
   if (currentBoundId === id) return
   if (currentBoundId) chat.unbindSession()
@@ -54,6 +59,18 @@ watch(
   })
 )
 
+// Trigger TTS when an agent message finishes streaming
+watch(
+  () => chat.streamingId,
+  (id) => {
+    if (id === null) {
+      // Stream just ended; find the most recent agent message and speak it
+      const last = [...chat.messages].reverse().find((m) => m.role === 'agent' && m.content)
+      if (last) void speakIfEnabled(last.content, last.id)
+    }
+  }
+)
+
 function onSend(): void {
   const text = chat.inputText
   if (!text.trim()) return
@@ -71,6 +88,29 @@ function onKeydown(e: KeyboardEvent): void {
 
 function onStop(): void {
   chat.abort()
+}
+
+/** Speak the agent's most recent message if TTS is on for this session. */
+async function speakIfEnabled(text: string, messageId: string): Promise<void> {
+  if (!sessions.activeId) return
+  const sess = sessions.sessions.find((s) => s.id === sessions.activeId)
+  if (!sess?.ttsEnabled) return
+  if (lastSpokenMessageId.value === messageId) return
+  lastSpokenMessageId.value = messageId
+  try {
+    const api = window.piAtrium
+    if (!api) return
+    const r = await api.tts.speak(text)
+    if (r.audioPath) {
+      const a = new Audio(`file://${r.audioPath}`)
+      a.play().catch(() => {
+        /* autoplay blocked or audio device missing */
+      })
+      audioRef.value = a
+    }
+  } catch (err) {
+    console.warn('[tts] speak failed:', (err as Error).message)
+  }
 }
 
 function fmtTime(ts: number): string {

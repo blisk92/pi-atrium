@@ -138,6 +138,10 @@ const api = {
     transcribe: (audioPath: string): Promise<{ text?: string; error?: string }> =>
       ipcRenderer.invoke('tts:transcribe', audioPath),
   },
+  fs: {
+    readTree: (rootPath: string): Promise<{ ok: boolean; tree: unknown[]; error?: string }> =>
+      ipcRenderer.invoke('fs:readTree', rootPath),
+  },
 }
 
 contextBridge.exposeInMainWorld('piAtrium', api)

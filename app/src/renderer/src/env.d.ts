@@ -82,6 +82,9 @@ interface PiAtriumAPI {
     speak: (text: string, voice?: string) => Promise<{ audioPath?: string; error?: string }>
     transcribe: (audioPath: string) => Promise<{ text?: string; error?: string }>
   }
+  fs: {
+    readTree: (rootPath: string) => Promise<{ ok: boolean; tree: unknown[]; error?: string }>
+  }
 }
 
 declare global {

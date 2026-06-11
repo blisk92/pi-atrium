@@ -53,6 +53,7 @@ watch(
   () => [active.value, sessions.activeId],
   ([a, id]) => {
     if (a === 'brain' && id) void loadBrain()
+    if (a === 'files' && id) void loadFileTree()
   },
   { immediate: true }
 )
@@ -64,47 +65,32 @@ function toggleSection(id: string): void {
   expandedSections.value = next
 }
 
-// ----- Mock file tree (real vault scan is Wave 6) -----
-const fileTree: TreeNodeData[] = [
-  {
-    name: 'app',
-    kind: 'dir',
-    children: [
-      {
-        name: 'resources',
-        kind: 'dir',
-        children: [{ name: 'system', kind: 'dir', children: [{ name: 'concierge.md', kind: 'file' }] }],
-      },
-      {
-        name: 'src',
-        kind: 'dir',
-        children: [
-          {
-            name: 'headless-pi',
-            kind: 'dir',
-            children: [
-              { name: 'cli.ts', kind: 'file' },
-              { name: 'server.ts', kind: 'file' },
-            ],
-          },
-          { name: 'main', kind: 'dir', children: [{ name: 'index.ts', kind: 'file' }] },
-          {
-            name: 'renderer',
-            kind: 'dir',
-            children: [
-              { name: 'components', kind: 'dir', children: [] },
-              { name: 'stores', kind: 'dir', children: [] },
-            ],
-          },
-          { name: 'shared', kind: 'dir', children: [{ name: 'types.ts', kind: 'file' }] },
-        ],
-      },
-      { name: 'package.json', kind: 'file' },
-      { name: 'electron.vite.config.ts', kind: 'file' },
-      { name: 'tsconfig.json', kind: 'file' },
-    ],
-  },
-]
+// ----- File tree (Wave 6 / Task 6.1) — live from disk -----
+const fileTree = ref<TreeNodeData[]>([])
+
+async function loadFileTree(): Promise<void> {
+  const agentId = sessions.activeId
+  if (!agentId) {
+    fileTree.value = []
+    return
+  }
+  const api = window.piAtrium
+  if (!api) return
+  // Find the active session's agentDir
+  const s = sessions.sessions.find((x) => x.id === agentId)
+  if (!s) return
+  // Sessions don't expose agentDir to the renderer; ask the main process
+  // to read the tree for the session directly. Pass the sessionId and let
+  // main process look it up.
+  const r = await api.fs.readTree(agentId)
+  // readTree(rootPath) was registered with a string param; the main process
+  // now interprets a sessionId (no path separator) as a session id.
+  if (r.ok && Array.isArray(r.tree)) {
+    fileTree.value = r.tree as TreeNodeData[]
+  } else {
+    fileTree.value = []
+  }
+}
 
 // ----- Skills (Wave 4 / Task 4.1) -----
 // Imported above as `useSkillStore`. The hardcoded `skills` array was
@@ -167,15 +153,19 @@ const activity = computed(() => {
       <div v-show="active === 'files'" class="tab-pane">
         <div class="pane-header">
           <span class="pane-title">Files</span>
-          <span class="pane-subtitle">team cwd</span>
+          <span class="pane-subtitle">
+            <template v-if="sessions.activeSession">team cwd</template>
+            <template v-else>—</template>
+          </span>
         </div>
-        <div class="file-tree">
+        <div v-if="fileTree.length === 0" class="empty-state">No files (or agent has no cwd).</div>
+        <div v-else class="file-tree">
           <ul>
             <TreeNode v-for="n in fileTree" :key="n.name" :node="n" :depth="0" />
           </ul>
         </div>
         <div class="pane-footer">
-          <span>Real vault scan → Wave 6</span>
+          <span>Click to preview → Task 6.2</span>
         </div>
       </div>
 

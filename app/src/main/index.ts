@@ -27,6 +27,7 @@ import {
   type BrainState,
 } from './brain.js'
 import { synthesizeSpeech, transcribeAudio } from './tts.js'
+import { readTree, type FileNode } from './files.js'
 import type { Team } from '../shared/types.js'
 // Note: readBrain/addBrainEntry/searchBrain are used by the Wave 3 IPC handlers
 void readBrain; void addBrainEntry; void searchBrain; void (null as unknown as BrainState)
@@ -752,6 +753,24 @@ app.whenReady().then(async () => {
   })
   ipcMain.handle('tts:transcribe', async (_evt, audioPath: string) => {
     return transcribeAudio(audioPath)
+  })
+
+  // --- File tree (Wave 6 / Task 6.1) ---
+  ipcMain.handle('fs:readTree', async (_evt, arg: string) => {
+    try {
+      // arg may be a session/team-member id (no path separator) or a path
+      let p = arg
+      if (!arg.includes(':') && !arg.includes('\\') && !arg.includes('/')) {
+        const s = sessions.get(arg)
+        if (!s?.agentDir) {
+          return { ok: false, error: 'no such session or no agentDir', tree: [] as FileNode[] }
+        }
+        p = s.agentDir
+      }
+      return { ok: true, tree: await readTree(p) }
+    } catch (err) {
+      return { ok: false, error: (err as Error).message, tree: [] as FileNode[] }
+    }
   })
 
   // --- Legacy single-concierge IPC (kept for back-compat) ---

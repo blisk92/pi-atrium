@@ -77,13 +77,14 @@ Each slice is a complete end-to-end deliverable (UI + backend + measurement). Ve
   - [x] Design system tokens wired (CSS variables from `design/system/tokens.md`)
   - [x] 3-pane shell (sidebar / chat / right pane) with placeholder content
   - [x] Cold-start benchmark · **537ms** (target < 5s) 🎉
-- [ ] **Slice 0.2 — "First agent"** — Concierge sidecar spawns on app start, shows in sidebar
-  - [ ] Headless Pi sidecar (Node child process, HTTP + SSE, port range 49152+)
-  - [ ] SYSTEM.md concierge persona bundled with the app
-  - [ ] Main process: spawn concierge on app start, track PID + port
-  - [ ] Pinia store: `useConciergeStore` with status (starting/active/error)
-  - [ ] Sidebar shows concierge with status dot + name
-  - [ ] Spawn benchmark · target < 3s
+- [x] **Slice 0.2 — "First agent"** ✅ — Concierge sidecar spawns on app start, shows in sidebar
+  - [x] Headless Pi sidecar (Node child process, HTTP + SSE, port 49152)
+  - [x] SYSTEM.md concierge persona bundled with the app
+  - [x] Main process: spawn concierge on app start, track PID + port, IPC bridge
+  - [x] Pinia store: `useAppStore.concierge` with status (idle/starting/active/error)
+  - [x] Sidebar shows concierge with live status dot + name + spawn benchmark
+  - [x] Spawn benchmark · **2,287ms** (target < 3s) 🎉
+  - [x] Preload exposes `window.piAtrium` API surface (concierge.get/send/onStateChange)
 - [ ] **Slice 0.3 — "First message"** — User types, agent responds in chat pane
   - [ ] Chat pane UI (message list, input area, send button)
   - [ ] Main process: HTTP client to concierge (`POST /message`)

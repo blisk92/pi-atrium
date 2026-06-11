@@ -1,17 +1,18 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted, computed } from 'vue'
 import { useAppStore } from '../stores/app'
-import { computed } from 'vue'
-import type { AgentStatus } from '@shared/types'
 
 const store = useAppStore()
 
-const concierge = computed(() =>
-  store.sessions.find((s) => s.isConcierge)
-)
+const concierge = computed(() => store.concierge)
 
-function dotClass(status: AgentStatus): string {
-  return `dot-${status}`
-}
+let unsubscribe: (() => void) | null = null
+onMounted(() => {
+  unsubscribe = store.subscribeConcierge()
+})
+onUnmounted(() => {
+  if (unsubscribe) unsubscribe()
+})
 </script>
 
 <template>
@@ -22,12 +23,26 @@ function dotClass(status: AgentStatus): string {
     </div>
 
     <div class="sidebar-section">
-      <div v-if="concierge" class="session" :class="{ active: concierge.status === 'active' }">
-        <span class="status-dot" :class="dotClass(concierge.status)"></span>
-        <span class="session-name">{{ concierge.name }}</span>
+      <div class="section-label">Pinned</div>
+      <div class="session" :class="{ active: concierge.status === 'active' }">
+        <span
+          class="status-dot"
+          :class="{
+            'dot-idle': concierge.status === 'idle',
+            'dot-starting': concierge.status === 'starting',
+            'dot-active': concierge.status === 'active',
+            'dot-error': concierge.status === 'error',
+          }"
+        ></span>
+        <span class="session-name">Concierge</span>
         <span class="concierge-pill">★</span>
       </div>
-      <div v-else class="empty">No concierge yet</div>
+      <div v-if="concierge.status === 'starting'" class="status-text">
+        Spawning…
+      </div>
+      <div v-else-if="concierge.status === 'error'" class="status-text error">
+        {{ concierge.errorMessage || 'Failed to start' }}
+      </div>
     </div>
   </aside>
 </template>
@@ -65,9 +80,17 @@ function dotClass(status: AgentStatus): string {
   letter-spacing: 0.3px;
 }
 .sidebar-section {
-  padding: 8px 0;
+  padding: 12px 0;
   flex: 1;
   overflow-y: auto;
+}
+.section-label {
+  padding: 0 28px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-faint);
 }
 .session {
   display: flex;
@@ -104,17 +127,13 @@ function dotClass(status: AgentStatus): string {
 .dot-idle { background: var(--text-faint); }
 .dot-starting { background: var(--info); animation: pulse 1.5s ease-in-out infinite; }
 .dot-active { background: var(--accent); }
-.dot-thinking { background: var(--info); animation: pulse 1.5s ease-in-out infinite; }
-.dot-tool { background: var(--warn); }
-.dot-attention { background: var(--accent); animation: pulse 1.5s ease-in-out infinite; }
 .dot-error { background: var(--error); }
-.dot-stopping { background: var(--warn); }
-.dot-stopped { background: var(--text-faint); }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-.empty {
-  padding: 12px 28px;
+.status-text {
+  padding: 4px 28px 0;
+  font-size: 11px;
   color: var(--text-faint);
-  font-size: 12px;
   font-style: italic;
 }
+.status-text.error { color: var(--error); font-style: normal; }
 </style>

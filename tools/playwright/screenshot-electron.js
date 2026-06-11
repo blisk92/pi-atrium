@@ -22,7 +22,7 @@ if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true })
   })
 
   console.log('App launched. Waiting for first window...')
-  const window = await app.firstWindow({ timeout: 15000 })
+  const window = await app.firstWindow({ timeout: 30000 })
   console.log('Window ready. Title:', await window.title())
 
   // Capture cold-start logs from main process
@@ -30,19 +30,40 @@ if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true })
   app.process().stdout.on('data', d => logs.push(d.toString()))
   app.process().stderr.on('data', d => logs.push(d.toString()))
 
-  // Wait for the cold-start timer to record
-  await window.waitForLoadState('networkidle', { timeout: 10000 })
-  await window.waitForTimeout(500)
+  // Capture renderer console output
+  const rendererLogs = []
+  window.on('console', msg => {
+    const text = `[${msg.type()}] ${msg.text()}`
+    rendererLogs.push(text)
+  })
+  window.on('pageerror', err => {
+    rendererLogs.push(`[pageerror] ${err.message}`)
+  })
+
+  // Wait for concierge to be active in the renderer
+  console.log('Waiting for concierge to be active (up to 15s)...')
+  try {
+    await window.waitForFunction(
+      () => {
+        const t = (window).__PINIA__ || null
+        // Fallback: check the DOM for the active state
+        return document.querySelector('.dot-active') !== null
+      },
+      { timeout: 15000 }
+    )
+    console.log('Concierge is active in the UI!')
+  } catch (e) {
+    console.log('Timed out waiting for active state, taking screenshot anyway...')
+  }
+
+  await window.waitForTimeout(1000)
 
   const out = path.join(outDir, 'electron-app-1400x900.png')
   await window.screenshot({ path: out })
   console.log('Screenshot:', out)
 
-  // Print any console errors from the renderer
-  window.on('console', msg => {
-    if (msg.type() === 'error') console.log('RENDERER ERROR:', msg.text())
-  })
-  window.on('pageerror', err => console.log('PAGE ERROR:', err.message))
+  console.log('\n--- Renderer console ---')
+  rendererLogs.forEach(l => console.log(l))
 
   console.log('\n--- Main process logs ---')
   logs.forEach(l => console.log(l.trim()))

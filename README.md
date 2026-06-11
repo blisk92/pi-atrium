@@ -184,3 +184,14 @@ node test-team-run-halt.js   # example: Team start + halt
 ## Maintainer
 
 **edmond** — single-user project, local-only
+
+---
+
+## Support
+
+If Pi Atrium makes your day a little better, you can buy me a coffee with Bitcoin:
+
+**`bc1qanppjy5l5zek7a3ddl445lx8kppmz0lypshkue`**
+
+Or scan the address above with any Bitcoin wallet. Every sat is appreciated; none required. ☕
+

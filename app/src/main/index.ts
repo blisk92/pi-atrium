@@ -18,6 +18,7 @@ import {
   getMemberDir,
   nextMemberId,
   newTeamId,
+  installBundledTeams,
 } from './teams.js'
 import {
   ensureBrainScaffold,
@@ -622,6 +623,14 @@ async function haltTeamMembers(teamId: string): Promise<void> {
 
 app.whenReady().then(async () => {
   markers['app.whenReady'] = Date.now() - t0
+
+  // --- First-run: install bundled teams (e.g. "HIMYM Dev Team") ---
+  try {
+    const n = await installBundledTeams()
+    if (n > 0) console.log(`[main] installed ${n} bundled team(s) on first run`)
+  } catch (err) {
+    console.warn('[main] installBundledTeams failed:', (err as Error).message)
+  }
 
   // --- Team IPC (Wave 2) ---
   await loadAllTeams()

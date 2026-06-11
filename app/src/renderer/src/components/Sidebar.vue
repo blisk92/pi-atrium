@@ -18,6 +18,9 @@ const expandedTeams = ref<Set<string>>(new Set())
 const formOpen = ref(false)
 const editingTeam = ref<null>(null) // create-only for now (no inline edit)
 
+// Settings modal state (Wave 9 / Task 9.1)
+const settingsOpen = ref(false)
+
 let cleanup: (() => void) | null = null
 
 onMounted(() => {

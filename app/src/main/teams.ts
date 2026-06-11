@@ -72,7 +72,7 @@ function generateBody(team: Team): string {
     for (const m of team.members) {
       lines.push(`### ${m.name}`)
       lines.push(`- **Role**: ${m.role}`)
-      if (m.initialTask) lines.push(`- **Task**: ${m.initialTask}`)
+      if (m.persona) lines.push(`- **Persona**: ${m.persona}`)
       lines.push(`- **Status**: ${m.status}`)
       lines.push('')
     }
@@ -80,7 +80,7 @@ function generateBody(team: Team): string {
   return lines.join('\n')
 }
 
-/** Generate a member's SYSTEM.md from their role + initial task. */
+/** Generate a member's SYSTEM.md from their role + persona. */
 export function generateMemberSystemPrompt(member: TeamMember, teamName: string): string {
   return `---
 name: ${member.name}
@@ -92,9 +92,9 @@ role: ${member.role}
 
 You are a **${member.role}** on the team "${teamName}" in Pi Atrium.
 
-## Your initial task
+## Persona
 
-${member.initialTask}
+${member.persona || '_(no additional persona specified)_'}
 
 ## How to work
 
@@ -181,7 +181,7 @@ export async function setupMemberDir(team: Team, member: TeamMember): Promise<st
         teamId: team.id,
         name: member.name,
         role: member.role,
-        initialTask: member.initialTask,
+        persona: member.persona,
       },
       null,
       2
@@ -206,4 +206,67 @@ export function getMemberDir(teamId: string, memberId: string): string {
 
 export function newTeamId(): string {
   return nextTeamId()
+}
+
+/**
+ * Bundled teams ship with the app (resources/teams/<team-id>/). On first run
+ * (or whenever the live teams dir is empty), we copy them into the live
+ * storage dir. After that, the live dir is the source of truth — the bundle
+ * is a one-time starter, not a re-seed.
+ */
+export async function installBundledTeams(): Promise<number> {
+  const appPath = app.getAppPath()
+  // Dev: <app>/resources/teams/<id>   Packaged: <resourcesPath>/teams/<id>
+  const bundleBase = app.isPackaged
+    ? path.join(process.resourcesPath, 'teams')
+    : path.join(appPath, 'resources', 'teams')
+  let teamDirs: { name: string }[]
+  try {
+    const entries = await fs.readdir(bundleBase, { withFileTypes: true })
+    teamDirs = entries.filter((e) => e.isDirectory())
+    if (teamDirs.length === 0) return 0
+  } catch {
+    return 0 // no bundled teams dir
+  }
+
+  // Live storage dir
+  const liveBase = app.isPackaged
+    ? path.join(app.getPath('userData'), 'teams')
+    : path.join(appPath, '.runtime', 'teams')
+  await fs.mkdir(liveBase, { recursive: true })
+
+  let installed = 0
+  for (const e of teamDirs) {
+    const src = path.join(bundleBase, e.name)
+    const dst = path.join(liveBase, e.name)
+    // Don't overwrite if already present
+    try {
+      await fs.access(dst)
+      continue
+    } catch {
+      /* not present, copy */
+    }
+    try {
+      await copyDirRecursive(src, dst)
+      installed++
+      console.log(`[teams] installed bundled team: ${e.name}`)
+    } catch (err) {
+      console.warn(`[teams] failed to install ${e.name}:`, (err as Error).message)
+    }
+  }
+  return installed
+}
+
+async function copyDirRecursive(src: string, dst: string): Promise<void> {
+  await fs.mkdir(dst, { recursive: true })
+  const entries = await fs.readdir(src, { withFileTypes: true })
+  for (const e of entries) {
+    const s = path.join(src, e.name)
+    const d = path.join(dst, e.name)
+    if (e.isDirectory()) {
+      await copyDirRecursive(s, d)
+    } else if (e.isFile()) {
+      await fs.copyFile(s, d)
+    }
+  }
 }

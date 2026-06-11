@@ -20,7 +20,7 @@ const emit = defineEmits<{
 interface MemberDraft {
   name: string
   role: string
-  initialTask: string
+  persona: string
 }
 
 const form = reactive({
@@ -46,14 +46,14 @@ watch(
       form.members = props.team.members.map((m) => ({
         name: m.name,
         role: m.role,
-        initialTask: m.initialTask,
+        persona: m.persona,
       }))
     } else {
       form.name = ''
       form.description = ''
       form.cwd = ''
       form.useDefaultCwd = true
-      form.members = [{ name: '', role: '', initialTask: '' }]
+      form.members = [{ name: '', role: '', persona: '' }]
     }
     error.value = null
   },
@@ -61,7 +61,7 @@ watch(
 )
 
 function addMember(): void {
-  form.members.push({ name: '', role: '', initialTask: '' })
+  form.members.push({ name: '', role: '', persona: '' })
 }
 
 function removeMember(i: number): void {
@@ -77,7 +77,7 @@ async function onSave(): Promise<void> {
     return
   }
   const cleanMembers = form.members
-    .map((m) => ({ name: m.name.trim(), role: m.role.trim(), initialTask: m.initialTask.trim() }))
+    .map((m) => ({ name: m.name.trim(), role: m.role.trim(), persona: m.persona.trim() }))
     .filter((m) => m.name && m.role)
   if (cleanMembers.length === 0) {
     error.value = 'At least one member with name and role is required'
@@ -98,7 +98,7 @@ async function onSave(): Promise<void> {
         id: '',
         name: m.name,
         role: m.role,
-        initialTask: m.initialTask,
+        persona: m.persona,
         status: 'draft' as const,
       })),
     }
@@ -177,7 +177,7 @@ function onCancel(): void {
                 class="member-role"
               />
               <input
-                v-model="m.initialTask"
+                v-model="m.persona"
                 placeholder="Initial task"
                 class="member-task"
               />

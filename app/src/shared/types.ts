@@ -57,7 +57,8 @@ export interface TeamMember {
   id: string
   name: string
   role: string
-  initialTask: string
+  /** Persona / additional context added to the agent's SYSTEM.md. */
+  persona: string
   /** When running, the session ID assigned to this member. */
   sessionId?: string
   status: MemberStatus

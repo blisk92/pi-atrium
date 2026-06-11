@@ -13,13 +13,9 @@ interface SpawnOptions {
   serverScriptPath: string // absolute path to the headless-pi server (server.ts in dev, server.js in prod)
 }
 
-let child: ChildProcess | null = null
+let children: ChildProcess[] = []
 
 export function spawnHeadlessPi(opts: SpawnOptions): { pid: number; port: number; child: ChildProcess } {
-  if (child) {
-    throw new Error('headless-pi already running (pid=' + child.pid + ')')
-  }
-
   // In dev, we use Node's built-in --experimental-strip-types to run the TS source.
   // (Faster startup than spawning npx, and Electron's PATH may not include npx.)
   // In prod, this would be a compiled .js file run directly with node.
@@ -56,20 +52,20 @@ export function spawnHeadlessPi(opts: SpawnOptions): { pid: number; port: number
     if (code !== 0 && code !== null) {
       console.error(`[headless-pi] exited with code ${code}`)
     }
-    child = null
+    children = children.filter((c) => c !== proc)
   })
 
-  child = proc
+  children.push(proc)
   return { pid: proc.pid ?? 0, port: opts.port, child: proc }
 }
 
 export function killHeadlessPi(): void {
-  if (child) {
+  for (const c of children) {
     try {
-      child.kill('SIGTERM')
+      c.kill('SIGTERM')
     } catch (err) {
       console.warn('[spawn] kill error:', (err as Error).message)
     }
-    child = null
   }
+  children = []
 }

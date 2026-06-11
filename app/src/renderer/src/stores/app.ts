@@ -5,7 +5,7 @@ import type { AgentStatus } from '@shared/types'
 /**
  * App-wide Pinia store.
  * Wave 0 / Task 0.2: cold-start timing + concierge lifecycle.
- * Will expand in Task 0.3+ (messages, file tabs, etc.)
+ * Wave 1: session lifecycle is in `useSessionStore`. Concierge is now session #0.
  */
 
 export interface ConciergeState {
@@ -14,26 +14,6 @@ export interface ConciergeState {
   port: number
   errorMessage?: string
   readyAtMs?: number
-}
-
-interface ConciergeEvent {
-  type: string
-  [k: string]: unknown
-}
-
-declare global {
-  interface Window {
-    piAtrium?: {
-      version: string
-      concierge: {
-        get: () => Promise<ConciergeState>
-        send: (text: string) => Promise<{ ok: boolean; status?: number; error?: string }>
-        abort: () => Promise<{ ok: boolean; error?: string }>
-        onStateChange: (cb: (state: ConciergeState) => void) => () => void
-        onEvent: (cb: (event: ConciergeEvent) => void) => () => void
-      }
-    }
-  }
 }
 
 export const useAppStore = defineStore('app', () => {
@@ -71,7 +51,8 @@ export const useAppStore = defineStore('app', () => {
     console.log('[cold-start] renderer ready:', coldStartMs.value, 'ms')
   }
 
-  // IPC subscription (called on mount)
+  // IPC subscription (called on mount) — kept for back-compat with Sidebar (which
+  // uses the new session store). Both stores coexist.
   function subscribeConcierge(): () => void {
     const api = window.piAtrium
     if (!api) {

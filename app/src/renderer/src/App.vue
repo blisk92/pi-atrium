@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useAppStore } from './stores/app'
+import { useSessionStore } from './stores/sessions'
 import Sidebar from './components/Sidebar.vue'
 import MiddlePane from './components/MiddlePane.vue'
 import RightPane from './components/RightPane.vue'
 
 const appStore = useAppStore()
+const sessionStore = useSessionStore()
 
 onMounted(() => {
   appStore.recordRendererReady()
+  // Sidebar calls subscribe() on its own mount; this is a backup.
+  sessionStore.subscribe()
 })
 </script>
 

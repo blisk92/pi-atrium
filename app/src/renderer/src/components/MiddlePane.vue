@@ -2,6 +2,9 @@
 /**
  * Middle pane — tabbed container with a pinned Chat tab and dynamic file tabs.
  * Wave 0 / Task 0.3: just the Chat tab. File tabs arrive in Wave 6.
+ *
+ * The tab bar is hidden when there's only one tab (gives the chat the full
+ * vertical space). It reappears automatically once file tabs are added.
  */
 import { computed, ref } from 'vue'
 import ChatPane from './ChatPane.vue'
@@ -20,11 +23,12 @@ const tabs = ref<Tab[]>([
 const activeTab = ref<string>('chat')
 
 const activeIsChat = computed(() => activeTab.value === 'chat')
+const showTabBar = computed(() => tabs.value.length > 1)
 </script>
 
 <template>
   <div class="middle-pane">
-    <div class="tab-bar">
+    <div v-if="showTabBar" class="tab-bar">
       <button
         v-for="t in tabs"
         :key="t.id"
@@ -93,6 +97,7 @@ const activeIsChat = computed(() => activeTab.value === 'chat')
   flex: 1;
   display: flex;
   overflow: hidden;
+  min-height: 0;
 }
 .placeholder {
   flex: 1;

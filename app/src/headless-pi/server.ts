@@ -112,7 +112,7 @@ async function main(): Promise<void> {
   console.log(`[headless-pi] system prompt ready (${markers['systemPrompt']}ms)`)
 
   // Build a custom resource loader that injects the SYSTEM.md content
-  // (we skip this for Slice 0.2 — the symlink above is enough for now)
+  // (we skip this for Task 0.2 — the symlink above is enough for now)
   const sessionOptions = {
     cwd: CWD,
     ...(AGENT_DIR ? { agentDir: AGENT_DIR } : {}),
@@ -126,20 +126,9 @@ async function main(): Promise<void> {
 
   // Subscribe to events; forward via SSE
   const unsubscribe = session.subscribe((event) => {
-    // Reduce verbose event types for the wire; full type still useful for debugging
-    const reduced: { type: string; [k: string]: unknown } = { type: event.type }
-    if ('message' in event && (event as { message?: unknown }).message) {
-      const msg = (event as { message: { role?: string; content?: unknown; id?: string; type?: string } }).message
-      reduced['role'] = msg.role
-      reduced['content'] = msg.content
-      reduced['messageId'] = msg.id
-      reduced['messageType'] = msg.type
-    }
-    if ('delta' in event) reduced['delta'] = (event as { delta: unknown }).delta
-    if ('toolName' in event) reduced['toolName'] = (event as { toolName: unknown }).toolName
-    if ('toolArgs' in event) reduced['toolArgs'] = (event as { toolArgs: unknown }).toolArgs
-    if ('willRetry' in event) reduced['willRetry'] = (event as { willRetry: unknown }).willRetry
-    broadcast(reduced)
+    // Forward the entire event as JSON. The renderer knows the schema.
+    // (Event fields observed: type, messageStart, messageUpdate, messageEnd, turnEnd, etc.)
+    broadcast(event as unknown as { type: string; [k: string]: unknown })
   })
 
   // HTTP server

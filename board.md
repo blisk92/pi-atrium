@@ -37,7 +37,7 @@ See [[Pi Atrium Tasks]] for the full task list and [[Pi Atrium PRD]] for require
 
 *(Currently being worked on — keep this lane small)*
 
-- **Wave 0 / Slice 0.2 — "First agent"** — spawn headless Pi sidecar on app start, show in sidebar. Awaiting Slice 0.1 review.
+- **Wave 0 / Task 0.2 — "First agent"** — spawn headless Pi sidecar on app start, show in sidebar. Awaiting Task 0.1 review.
 
 ## Review / QA
 

@@ -2,7 +2,7 @@
 import { onMounted } from 'vue'
 import { useAppStore } from './stores/app'
 import Sidebar from './components/Sidebar.vue'
-import ChatPane from './components/ChatPane.vue'
+import MiddlePane from './components/MiddlePane.vue'
 import RightPane from './components/RightPane.vue'
 
 const appStore = useAppStore()
@@ -15,7 +15,7 @@ onMounted(() => {
 <template>
   <div class="app">
     <Sidebar />
-    <ChatPane />
+    <MiddlePane />
     <RightPane />
   </div>
 </template>

@@ -4,8 +4,8 @@ import type { AgentStatus } from '@shared/types'
 
 /**
  * App-wide Pinia store.
- * Wave 0 / Slice 0.2: cold-start timing + concierge lifecycle.
- * Will expand in Slice 0.3+ (messages, file tabs, etc.)
+ * Wave 0 / Task 0.2: cold-start timing + concierge lifecycle.
+ * Will expand in Task 0.3+ (messages, file tabs, etc.)
  */
 
 export interface ConciergeState {
@@ -16,6 +16,11 @@ export interface ConciergeState {
   readyAtMs?: number
 }
 
+interface ConciergeEvent {
+  type: string
+  [k: string]: unknown
+}
+
 declare global {
   interface Window {
     piAtrium?: {
@@ -23,7 +28,9 @@ declare global {
       concierge: {
         get: () => Promise<ConciergeState>
         send: (text: string) => Promise<{ ok: boolean; status?: number; error?: string }>
+        abort: () => Promise<{ ok: boolean; error?: string }>
         onStateChange: (cb: (state: ConciergeState) => void) => () => void
+        onEvent: (cb: (event: ConciergeEvent) => void) => () => void
       }
     }
   }

@@ -42,11 +42,11 @@ try { fs.rmSync(runtimeTeams, { recursive: true, force: true }) } catch {}
   await input.fill('Is the team ready?')
   await input.press('Enter')
 
-  // Poll for the thinking row as soon as it appears (likely within ~500ms)
+  // Poll for the thinking row as soon as it appears (likely within ~5s of thinking_start)
   let thinking = 0
   let thinkingText = '(none)'
-  for (let i = 0; i < 20; i++) {
-    await page.waitForTimeout(150)
+  for (let i = 0; i < 50; i++) {
+    await page.waitForTimeout(300)
     thinking = await page.locator('.message-thinking').count()
     if (thinking > 0) {
       thinkingText = await page.locator('.thinking-text').first().textContent().catch(() => '(none)')

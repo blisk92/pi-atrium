@@ -218,6 +218,7 @@ export const useChatStore = defineStore('chat', () => {
 
   /** Subscribe to incoming events for a specific session. */
   function bindSession(id: string): void {
+    console.log(`[chat] bindSession(${id})`)
     currentId.value = id
     ensure(id)
     if (!eventListener) {

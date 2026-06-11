@@ -16,7 +16,8 @@
   "dependencies": {
     "@earendil-works/pi-coding-agent": "^0.79.1",
     "pinia": "^2.2.6",
-    "vue": "^3.5.13"
+    "vue": "^3.5.13",
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
@@ -28,5 +29,8 @@
     "typescript": "^5.7.2",
     "vite": "^5.4.11",
     "vue-tsc": "^2.1.10"
+  },
+  "optionalDependencies": {
+    "bufferutil": "4.0.9"
   }
 }

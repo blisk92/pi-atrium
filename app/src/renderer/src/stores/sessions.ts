@@ -91,6 +91,7 @@ export const useSessionStore = defineStore('sessions', () => {
     if (!window.piAtrium) return
     void refresh()
     unsubscribeUpdate = window.piAtrium.sessions.onUpdate((list) => {
+      console.log(`[session:onUpdate] ${list.length} sessions`)
       sessions.value = list
       if (activeId.value === null && list.length > 0) {
         activeId.value = list[0].id
@@ -101,6 +102,7 @@ export const useSessionStore = defineStore('sessions', () => {
       }
     })
     unsubscribeEvent = window.piAtrium.sessions.onEvent((id, event) => {
+      console.log(`[session:onEvent] ${event.type} for ${id.slice(-12)}`)
       // Forward to chat store. The chat store will pick the right session by id.
       // We use a custom event on window to avoid circular imports.
       window.dispatchEvent(new CustomEvent('piAtrium:sessionEvent', { detail: { id, event } }))

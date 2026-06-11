@@ -236,9 +236,9 @@ async function main(): Promise<void> {
       }
     })
 
-    ws.on('close', () => {
+    ws.on('close', (code: number, reason: Buffer) => {
       sockets.delete(ws)
-      console.log(`[headless-pi] ws client #${id} disconnected (${sockets.size} total)`)
+      console.log(`[headless-pi] ws client #${id} disconnected (${sockets.size} total) code=${code} reason=${reason?.toString() || ''}`)
     })
 
     ws.on('error', (err: Error) => {

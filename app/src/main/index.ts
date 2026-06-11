@@ -201,7 +201,11 @@ function startSessionSse(session: Session): void {
     const url = `ws://127.0.0.1:${session.port}/ws`
     let ws: WS
     try {
-      ws = new WS(url, { handshakeTimeout: 3000 } as WS.ClientOptions)
+      ws = new WS(url, {
+        handshakeTimeout: 3000,
+        perMessageDeflate: false,
+        maxPayload: 1024 * 1024,
+      } as WS.ClientOptions)
     } catch (err) {
       console.warn(`[main] ws construct failed for ${session.id}:`, (err as Error).message)
       setTimeout(connect, backoff.ms)
@@ -215,6 +219,7 @@ function startSessionSse(session: Session): void {
     })
 
     ws.on('message', (data: WS.RawData) => {
+      console.log(`[main:ws-msg] got ${data.toString('utf-8').length} bytes from ${session.id}`)
       let event: { type: string; [k: string]: unknown } | null = null
       try {
         event = JSON.parse(data.toString('utf-8')) as { type: string }
@@ -243,9 +248,12 @@ function startSessionSse(session: Session): void {
       console.log(`[main] ws reconnecting to ${session.id} in ${wait}ms`)
     }
 
-    ws.on('close', reconnect)
+    ws.on('close', (code: number, reason: Buffer) => {
+      console.log(`[main] ws closed for ${session.id} code=${code} reason=${reason?.toString() || '(none)'} readyState=${ws.readyState}`)
+      reconnect()
+    })
     ws.on('error', (err: Error) => {
-      console.warn(`[main] ws error for ${session.id}:`, err.message)
+      console.warn(`[main] ws error for ${session.id}: ${err.message} (code=${(err as NodeJS.ErrnoException).code})`)
       try { ws.terminate() } catch { /* ignore */ }
     })
   }
@@ -505,8 +513,15 @@ async function loadAllTeams(): Promise<void> {
 
 async function startTeamMembers(teamId: string): Promise<void> {
   const team = teams.get(teamId)
-  if (!team) return
-  if (team.status === 'active' || team.status === 'starting') return
+  if (!team) {
+    console.log(`[main] startTeamMembers(${teamId}): no such team`)
+    return
+  }
+  if (team.status === 'active' || team.status === 'starting') {
+    console.log(`[main] startTeamMembers(${teamId}): already ${team.status}`)
+    return
+  }
+  console.log(`[main] startTeamMembers(${teamId}): starting`)
 
   team.status = 'starting'
   team.startedAt = Date.now()
@@ -761,6 +776,7 @@ app.whenReady().then(async () => {
     return { ok }
   })
   ipcMain.handle('teams:start', async (_evt, id: string) => {
+    console.log(`[main] teams:start ${id}`)
     void startTeamMembers(id)
     return { ok: true }
   })

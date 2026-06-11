@@ -66,18 +66,25 @@ export const useSkillStore = defineStore('skills', () => {
   const allSkills = computed<Skill[]>(() => BUILTIN_SKILLS)
 
   function isEnabled(agentId: string, skillName: string): boolean {
-    return enabledByAgent[agentId]?.[skillName] === true
+    // Per-agent explicit setting wins.
+    const explicit = enabledByAgent[agentId]?.[skillName]
+    if (explicit !== undefined) return explicit
+    // Default: pi-intercom is on for every agent. Everything else off.
+    return skillName === 'pi-intercom'
   }
 
   function toggle(agentId: string, skillName: string): void {
     if (!enabledByAgent[agentId]) enabledByAgent[agentId] = {}
-    enabledByAgent[agentId][skillName] = !enabledByAgent[agentId][skillName]
+    const cur = isEnabled(agentId, skillName)
+    enabledByAgent[agentId][skillName] = !cur
   }
 
   function countOn(agentId: string): number {
-    const map = enabledByAgent[agentId]
-    if (!map) return 0
-    return Object.values(map).filter(Boolean).length
+    let n = 0
+    for (const s of skillsFor(agentId)) {
+      if (isEnabled(agentId, s.name)) n++
+    }
+    return n
   }
 
   /**

@@ -10,8 +10,8 @@ const path = require('path')
 
 const SOURCE_BASE = 'C:\\Users\\edmon\\pi-agents'
 const APP_DIR = path.resolve(__dirname, '../../app')
-const BUNDLE_BASE = path.join(APP_DIR, 'resources', 'teams', 'himym-dev')
 const TEAM_ID = 't-himym-dev'
+const BUNDLE_BASE = path.join(APP_DIR, 'resources', 'teams', TEAM_ID)
 
 const DISPLAY = {
   barney: 'Barney',

@@ -173,31 +173,56 @@ export function nextMemberId(): string {
 export async function setupMemberDir(team: Team, member: TeamMember): Promise<string> {
   const dir = memberDir(team.id, member.id)
   await fs.mkdir(path.join(dir, '.pi'), { recursive: true })
-  await fs.writeFile(
-    path.join(dir, 'config.json'),
-    JSON.stringify(
-      {
-        id: member.id,
-        teamId: team.id,
-        name: member.name,
-        role: member.role,
-        persona: member.persona,
-      },
-      null,
-      2
-    ),
-    'utf-8'
-  )
 
-  await fs.writeFile(
-    path.join(dir, '.pi', 'SYSTEM.md'),
-    generateMemberSystemPrompt(member, team.name),
-    'utf-8'
-  )
+  // config.json: write only if missing. Bundled teams ship with their own
+  // config.json; we don't want to clobber the user's hand-edits to it.
+  const cfgPath = path.join(dir, 'config.json')
+  if (!(await pathExists(cfgPath))) {
+    await fs.writeFile(
+      cfgPath,
+      JSON.stringify(
+        {
+          id: member.id,
+          teamId: team.id,
+          name: member.name,
+          role: member.role,
+          persona: member.persona,
+        },
+        null,
+        2
+      ),
+      'utf-8'
+    )
+  }
+
+  // SYSTEM.md: THIS IS THE BUG FIX.
+  // Bundled teams (e.g. HIMYM Dev Team) ship with a rich, hand-authored
+  // .pi/SYSTEM.md that gives each member their real persona, tone, and
+  // responsibilities. generateMemberSystemPrompt() only produces a thin
+  // template from `member.persona`, which is great for user-created teams
+  // that have NO bundled SYSTEM.md, but it clobbers the rich copy.
+  // The fix: write the generated template ONLY when no SYSTEM.md exists.
+  const sysPath = path.join(dir, '.pi', 'SYSTEM.md')
+  if (!(await pathExists(sysPath))) {
+    await fs.writeFile(
+      sysPath,
+      generateMemberSystemPrompt(member, team.name),
+      'utf-8'
+    )
+  }
 
   // Brain scaffold is added in Wave 3 by ensureBrainScaffold(); keep
   // this function focused on member identity.
   return dir
+}
+
+async function pathExists(p: string): Promise<boolean> {
+  try {
+    await fs.access(p)
+    return true
+  } catch {
+    return false
+  }
 }
 
 export function getMemberDir(teamId: string, memberId: string): string {
@@ -239,14 +264,14 @@ export async function installBundledTeams(): Promise<number> {
   for (const e of teamDirs) {
     const src = path.join(bundleBase, e.name)
     const dst = path.join(liveBase, e.name)
-    // Don't overwrite if already present
+    // Don't overwrite if the live copy is already populated. We check for
+    // *content* (not just existence) because an empty dir would still pass
+    // fs.access() but wouldn't have the bundled SYSTEM.md / config.json /
+    // skills we need.
+    if (await dirHasContent(dst)) continue
     try {
-      await fs.access(dst)
-      continue
-    } catch {
-      /* not present, copy */
-    }
-    try {
+      // Make sure the destination exists even if dirHasContent() said no
+      await fs.mkdir(dst, { recursive: true })
       await copyDirRecursive(src, dst)
       installed++
       console.log(`[teams] installed bundled team: ${e.name}`)
@@ -255,6 +280,15 @@ export async function installBundledTeams(): Promise<number> {
     }
   }
   return installed
+}
+
+async function dirHasContent(p: string): Promise<boolean> {
+  try {
+    const entries = await fs.readdir(p)
+    return entries.length > 0
+  } catch {
+    return false
+  }
 }
 
 async function copyDirRecursive(src: string, dst: string): Promise<void> {

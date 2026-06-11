@@ -1,0 +1,33 @@
+appId: dev.pi-atrium.app
+productName: Pi Atrium
+copyright: Copyright © 2026 edmond
+directories:
+  buildResources: resources
+  output: release/${version}
+files:
+  - out/**/*
+  - package.json
+  - "!**/.git"
+  - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
+  - "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}"
+  - "!**/node_modules/*.d.ts"
+  - "!**/node_modules/.bin"
+asar: true
+win:
+  target:
+    - target: portable
+      arch: [x64]
+  artifactName: ${productName}-${version}-portable.${ext}
+  icon: resources/icon.ico
+portable:
+  artifactName: Pi Atrium-${version}-portable.exe
+mac:
+  target:
+    - target: dir
+      arch: [x64, arm64]
+  category: public.app-category.developer-tools
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  category: Development

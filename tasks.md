@@ -57,19 +57,45 @@ status: active
 - [ ] User reviews and approves prototype
 
 ## Phase: Design System
-- [ ] Tokens defined (colors, typography, spacing, motion)
-- [ ] Core components documented (sidebar, chat pane, file tree, status pill, etc.)
-- [ ] Voice UI states documented (recording, transcribing, speaking)
-- [ ] Empty/loading/error states designed for each surface
+- [x] Tokens defined (colors, typography, spacing, motion) → `design/system/tokens.md`
+- [x] Core components documented (20 components) → `design/system/components.md`
+- [x] Voice UI states documented (PTT, TTS, per-session toggle) → `design/system/voice-states.md`
+- [x] Empty/loading/error/success/disabled state patterns → `design/system/states.md`
+- [x] Live examples rendered → `design/system/examples.html`
+- [x] Design system overview → `design/system/index.md`
+- [x] Visual verification via Playwright screenshot (no JS errors, all components render)
 
 ## Phase: Build Waves
 
-### Wave 0: Foundation
-- [ ] BE-0001 — Electron app scaffold (main + preload + renderer)
-- [ ] BE-0002 — Headless Pi sidecar wrapper (HTTP + SSE)
-- [ ] FE-0001 — Renderer process + basic layout shell
-- [ ] BE-0003 — Agent lifecycle manager (spawn, halt, restart)
-- [ ] QA-0001 — Cold start + spawn time benchmarks
+### Wave 0: Foundation — 4 vertical slices
+
+Each slice is a complete end-to-end deliverable (UI + backend + measurement). Vertical not horizontal.
+
+- [ ] **Slice 0.1 — "Empty room"** — App boots, 3-pane shell renders with design system, cold start measured
+  - [ ] Electron scaffold (main + preload + renderer)
+  - [ ] Vue 3 + Vite + Pinia + TypeScript strict
+  - [ ] Design system tokens wired (CSS variables from `design/system/tokens.md`)
+  - [ ] 3-pane shell (sidebar / chat / right pane) with placeholder content
+  - [ ] Cold-start benchmark · target < 5s
+- [ ] **Slice 0.2 — "First agent"** — Concierge sidecar spawns on app start, shows in sidebar
+  - [ ] Headless Pi sidecar (Node child process, HTTP + SSE, port range 49152+)
+  - [ ] SYSTEM.md concierge persona bundled with the app
+  - [ ] Main process: spawn concierge on app start, track PID + port
+  - [ ] Pinia store: `useConciergeStore` with status (starting/active/error)
+  - [ ] Sidebar shows concierge with status dot + name
+  - [ ] Spawn benchmark · target < 3s
+- [ ] **Slice 0.3 — "First message"** — User types, agent responds in chat pane
+  - [ ] Chat pane UI (message list, input area, send button)
+  - [ ] Main process: HTTP client to concierge (`POST /message`)
+  - [ ] SSE listener for streamed response chunks
+  - [ ] Pinia store: `useChatStore` with messages, streaming state, agent status
+  - [ ] Middle pane tabs (chat pinned + dynamic file tabs)
+  - [ ] First-token latency benchmark · target < 2s
+- [ ] **Slice 0.4 — "Right pane"** — File tree + brain/skills/activity tabs
+  - [ ] Right pane tab system (Files / Brain / Skills / Activity)
+  - [ ] File tree component (mock data for now, real vault scan in Wave 6)
+  - [ ] Brain / Skills / Activity tabs (placeholder content)
+  - [ ] End-to-end smoke: spawn agent, send message, see response, switch tabs
 
 ### Wave 1: Concierge + Single Session
 - [ ] BE-0004 — Concierge sidecar spawn (persistent on app start)

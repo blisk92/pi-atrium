@@ -37,7 +37,7 @@ See [[Pi Atrium Tasks]] for the full task list and [[Pi Atrium PRD]] for require
 
 *(Currently being worked on — keep this lane small)*
 
-- **Phase: Clickable Prototype** — 5 prototype pages built (onboarding, team-new, team-active, voice, settings) + hub. Awaiting user review.
+- **Phase: Design System** — `design/system/` complete (tokens, 20 components, voice states, empty/loading/error patterns, live examples HTML). Awaiting user review.
 
 ## Review / QA
 

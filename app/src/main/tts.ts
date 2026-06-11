@@ -51,7 +51,8 @@ export async function synthesizeSpeech(text: string, voice?: string): Promise<{ 
   if (voice) args.push('--voice', voice)
 
   try {
-    await execFileP(_mmxCmd, args, { timeout: 60_000 })
+    // On Windows, .cmd files need shell: true (or to be invoked via cmd.exe)
+    await execFileP(_mmxCmd, args, { timeout: 60_000, shell: true })
     return { audioPath }
   } catch (err) {
     const msg = (err as Error).message
@@ -63,7 +64,11 @@ export async function synthesizeSpeech(text: string, voice?: string): Promise<{ 
 export async function transcribeAudio(audioPath: string): Promise<{ text: string } | { error: string }> {
   if (!_mmxCmd) _mmxCmd = await findMmx()
   try {
-    const { stdout } = await execFileP(_mmxCmd, ['speech', 'transcribe', audioPath], { timeout: 60_000 })
+    const { stdout } = await execFileP(
+      _mmxCmd,
+      ['speech', 'transcribe', audioPath],
+      { timeout: 60_000, shell: true }
+    )
     return { text: stdout.trim() }
   } catch (err) {
     return { error: (err as Error).message }

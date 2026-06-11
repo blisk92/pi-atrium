@@ -41,14 +41,14 @@ async function main() {
     )
     log('Concierge active')
 
-    head('2. Enable TTS for the concierge via IPC')
+    head('2. Enable TTS for the concierge via IPC (for the chat-message auto-speak)')
     const ttsResult = await window.evaluate(async () => {
       const api = window.piAtrium
       if (!api) return { error: 'no api' }
       return api.sessions.setTts('concierge', true)
     })
-    log('setTts result: ' + JSON.stringify(ttsResult))
-    if (!ttsResult.ok) throw new Error('Failed to enable TTS')
+    log('setTts(concierge) result: ' + JSON.stringify(ttsResult))
+    if (!ttsResult.ok) throw new Error('Failed to enable TTS for concierge')
 
     head('3. Speak a test phrase via the IPC (smoke test the TTS path)')
     const speakResult = await window.evaluate(async () => {
@@ -103,15 +103,37 @@ async function main() {
     log('✓ Agent response received')
     await window.screenshot({ path: path.join(outDir, 'tts-1-response.png') })
 
-    head('5. Verify the sidebar shows TTS toggle on')
+    head('5. Spawn a 2nd session, enable its TTS, verify the toggle is visually on')
+    // The concierge is always-on and has no TTS toggle in the sidebar (per design).
+    // Spawn a 2nd session and verify the toggle UI works for it.
+    await window.click('.spawn-btn')
+    await window.waitForFunction(
+      () => document.querySelectorAll('.session').length === 2,
+      null,
+      { timeout: 15000 }
+    )
+    await window.waitForFunction(
+      () => {
+        const ss = document.querySelectorAll('.session')
+        return ss.length === 2 && ss[1].classList.contains('active')
+      },
+      null,
+      { timeout: 15000 }
+    )
+    await window.waitForTimeout(500)
+    // Enable TTS on the new session via the sidebar toggle
+    await window.evaluate(() => {
+      const ss = document.querySelectorAll('.session')
+      ss[1].querySelector('.tts-toggle')?.click()
+    })
     await window.waitForTimeout(300)
     const ttsToggleOn = await window.evaluate(() => {
-      const concierge = document.querySelector('.session:has(.concierge-pill)')
-      const tts = concierge?.querySelector('.tts-toggle')
+      const ss = document.querySelectorAll('.session')
+      const tts = ss[1]?.querySelector('.tts-toggle')
       return tts?.classList.contains('on') ?? null
     })
-    log('Concierge TTS toggle on? ' + ttsToggleOn)
-    if (ttsToggleOn !== true) throw new Error('TTS toggle not visually on')
+    log('s1 TTS toggle on? ' + ttsToggleOn)
+    if (ttsToggleOn !== true) throw new Error('TTS toggle not visually on for s1')
 
     log('\n=== TASK 5.1 TEST PASSED ===')
     printLogs()

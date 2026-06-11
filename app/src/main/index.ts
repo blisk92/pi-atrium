@@ -28,6 +28,7 @@ import {
 } from './brain.js'
 import { synthesizeSpeech, transcribeAudio } from './tts.js'
 import { readTree, type FileNode } from './files.js'
+import { readSettings, writeSettings, pickVaultFolder } from './settings.js'
 import type { Team } from '../shared/types.js'
 // Note: readBrain/addBrainEntry/searchBrain are used by the Wave 3 IPC handlers
 void readBrain; void addBrainEntry; void searchBrain; void (null as unknown as BrainState)
@@ -754,6 +755,14 @@ app.whenReady().then(async () => {
   ipcMain.handle('tts:transcribe', async (_evt, audioPath: string) => {
     return transcribeAudio(audioPath)
   })
+
+  // --- Settings (Wave 9 / Task 9.1) ---
+  ipcMain.handle('settings:get', () => readSettings())
+  ipcMain.handle('settings:set', async (_evt, s: unknown) => {
+    await writeSettings(s as Parameters<typeof writeSettings>[0])
+    return { ok: true }
+  })
+  ipcMain.handle('settings:pickFolder', () => pickVaultFolder())
 
   // --- File tree (Wave 6 / Task 6.1) ---
   ipcMain.handle('fs:readTree', async (_evt, arg: string) => {

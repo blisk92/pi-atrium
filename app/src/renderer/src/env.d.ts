@@ -85,6 +85,11 @@ interface PiAtriumAPI {
   fs: {
     readTree: (rootPath: string) => Promise<{ ok: boolean; tree: unknown[]; error?: string }>
   }
+  settings: {
+    get: () => Promise<unknown>
+    set: (s: unknown) => Promise<{ ok: boolean }>
+    pickFolder: () => Promise<string | null>
+  }
 }
 
 declare global {

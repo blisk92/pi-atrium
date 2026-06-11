@@ -142,6 +142,11 @@ const api = {
     readTree: (rootPath: string): Promise<{ ok: boolean; tree: unknown[]; error?: string }> =>
       ipcRenderer.invoke('fs:readTree', rootPath),
   },
+  settings: {
+    get: (): Promise<unknown> => ipcRenderer.invoke('settings:get'),
+    set: (s: unknown): Promise<{ ok: boolean }> => ipcRenderer.invoke('settings:set', s),
+    pickFolder: (): Promise<string | null> => ipcRenderer.invoke('settings:pickFolder'),
+  },
 }
 
 contextBridge.exposeInMainWorld('piAtrium', api)

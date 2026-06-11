@@ -210,10 +210,42 @@ function statusPillClass(s: string): string {
     </div>
 
     <TeamForm :open="formOpen" :team="editingTeam" @close="formOpen = false" />
+    <SettingsModal :open="settingsOpen" @close="settingsOpen = false" />
+
+    <div class="sidebar-footer">
+      <button class="settings-btn" title="Settings" @click="settingsOpen = true">⚙ Settings</button>
+    </div>
   </aside>
 </template>
 
 <style scoped>
+.sidebar-footer {
+  margin-top: auto;
+  padding: 8px 18px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.settings-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+}
+.settings-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
 .sidebar {
   background: var(--surface);
   border-right: 1px solid var(--border);

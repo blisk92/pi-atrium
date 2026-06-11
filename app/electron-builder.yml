@@ -17,6 +17,8 @@ win:
   target:
     - target: portable
       arch: [x64]
+    - target: zip
+      arch: [x64]
   artifactName: ${productName}-${version}-portable.${ext}
   icon: resources/icon.ico
 portable:

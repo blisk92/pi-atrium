@@ -33,6 +33,27 @@ interface ConciergeEvent {
   [k: string]: unknown
 }
 
+interface BrainEntry {
+  id: string
+  text: string
+  createdAt: number
+  source?: string
+}
+interface BrainSectionState {
+  id: 'episodic' | 'semantic' | 'procedural' | 'working'
+  name: string
+  description: string
+  entries: BrainEntry[]
+}
+interface BrainState {
+  agentId: string
+  agentName: string
+  role?: string
+  profile: string
+  sections: BrainSectionState[]
+  totalEntries: number
+}
+
 const api = {
   version: '0.4.0',
   concierge: {
@@ -95,6 +116,21 @@ const api = {
       ipcRenderer.on('teams:update', listener)
       return () => ipcRenderer.removeListener('teams:update', listener)
     },
+  },
+  agents: {
+    brain: (agentId: string): Promise<BrainState | null> =>
+      ipcRenderer.invoke('agents:brain', agentId),
+    remember: (
+      agentId: string,
+      section: 'episodic' | 'semantic' | 'procedural' | 'working',
+      text: string
+    ): Promise<{ ok: boolean; entry?: BrainEntry; error?: string }> =>
+      ipcRenderer.invoke('agents:brain:remember', agentId, section, text),
+    recall: (
+      agentId: string,
+      query: string
+    ): Promise<{ ok: boolean; matches: { section: string; text: string }[] }> =>
+      ipcRenderer.invoke('agents:brain:recall', agentId, query),
   },
 }
 

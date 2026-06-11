@@ -173,11 +173,6 @@ export function nextMemberId(): string {
 export async function setupMemberDir(team: Team, member: TeamMember): Promise<string> {
   const dir = memberDir(team.id, member.id)
   await fs.mkdir(path.join(dir, '.pi'), { recursive: true })
-  await fs.mkdir(path.join(dir, 'brain', 'episodic'), { recursive: true })
-  await fs.mkdir(path.join(dir, 'brain', 'semantic'), { recursive: true })
-  await fs.mkdir(path.join(dir, 'brain', 'procedural'), { recursive: true })
-  await fs.mkdir(path.join(dir, 'brain', 'working'), { recursive: true })
-
   await fs.writeFile(
     path.join(dir, 'config.json'),
     JSON.stringify(
@@ -200,12 +195,8 @@ export async function setupMemberDir(team: Team, member: TeamMember): Promise<st
     'utf-8'
   )
 
-  await fs.writeFile(
-    path.join(dir, 'brain.md'),
-    `# ${member.name} — Brain Index\n\n_Populated in Wave 3._\n`,
-    'utf-8'
-  )
-
+  // Brain scaffold is added in Wave 3 by ensureBrainScaffold(); keep
+  // this function focused on member identity.
   return dir
 }
 

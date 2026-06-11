@@ -92,42 +92,60 @@ export const useChatStore = defineStore('chat', () => {
     const cmd = (spaceIdx === -1 ? trimmed.slice(1) : trimmed.slice(1, spaceIdx)).toLowerCase()
     const arg = spaceIdx === -1 ? '' : trimmed.slice(spaceIdx + 1).trim()
 
+    // /remember [section] <text>  — default section: episodic
+    //   /remember this happened
+    //   /remember semantic the user prefers short answers
     if (cmd === 'remember' || cmd === 'mem') {
       if (!arg) {
-        pushSystemMessage(id, '_usage: /remember <text>_')
+        pushSystemMessage(id, '_usage: /remember [section] <text>_')
         return true
       }
-      const r = await api.sessions.remember(id, arg)
-      pushSystemMessage(
-        id,
-        r.ok ? `_📝 remembered (${r.count} entries total)_` : `_remember failed: ${r.error}_`
-      )
-      return true
-    }
-    if (cmd === 'recall' || cmd === 'r') {
-      const r = await api.sessions.recall(id, arg)
-      if (!r.ok) {
-        pushSystemMessage(id, `_recall failed: ${r.error}_`)
-      } else if (r.matches.length === 0) {
-        pushSystemMessage(id, `_🔍 no matches for "${arg}"_`)
+      // Optional first word = section
+      const validSections = ['episodic', 'semantic', 'procedural', 'working']
+      const parts = arg.split(/\s+/)
+      let section = 'episodic'
+      let body = arg
+      if (validSections.includes(parts[0]!.toLowerCase())) {
+        section = parts[0]!.toLowerCase()
+        body = parts.slice(1).join(' ')
+        if (!body) {
+          pushSystemMessage(id, '_usage: /remember [section] <text>_')
+          return true
+        }
+      }
+      const r = await api.agents.remember(id, section as 'episodic', body)
+      if (r.ok) {
+        pushSystemMessage(id, `_📝 remembered in **${section}** (id ${r.entry?.id})_`)
       } else {
-        const lines = r.matches.map((m, i) => `  ${i + 1}. ${m}`)
-        pushSystemMessage(id, `🔍 **${r.matches.length} match${r.matches.length === 1 ? '' : 'es'}:**\n${lines.join('\n')}`)
+        pushSystemMessage(id, `_remember failed: ${r.error}_`)
       }
       return true
     }
-    if (cmd === 'forget') {
-      // For now: "forget" means "no op" — we don't expose clear via the slash
-      // command, since the spec is just "remember/recall basics". Mention it.
-      pushSystemMessage(id, '_🧠 memory clearing is a future task (Wave 3). For now, restart the session to clear._')
+
+    if (cmd === 'recall' || cmd === 'r') {
+      const r = await api.agents.recall(id, arg)
+      if (!r.ok) {
+        pushSystemMessage(id, `_recall failed_`)
+      } else if (r.matches.length === 0) {
+        pushSystemMessage(id, arg
+          ? `_🔍 no matches in brain for "${arg}"_`
+          : '_🧠 brain is empty for this agent_')
+      } else {
+        const lines = r.matches.map((m, i) => `  ${i + 1}. [${m.section}] ${m.text}`)
+        pushSystemMessage(
+          id,
+          `🔍 **${r.matches.length} brain match${r.matches.length === 1 ? '' : 'es'}:**\n${lines.join('\n')}`
+        )
+      }
       return true
     }
+
     if (cmd === 'help' || cmd === '?') {
       pushSystemMessage(
         id,
         '**Slash commands:**\n' +
-          '  `/remember <text>` — store a memory entry\n' +
-          '  `/recall [query]` — search memory (empty = list all)\n' +
+          '  `/remember [section] <text>` — store in brain (section: episodic/semantic/procedural/working, default episodic)\n' +
+          '  `/recall [query]` — search brain (empty = list all)\n' +
           '  `/help` — show this help'
       )
       return true

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useAppStore } from '../stores/app'
 import { useChatStore } from '../stores/chat'
+import { useSessionStore } from '../stores/sessions'
 import TreeNode, { type TreeNodeData } from './TreeNode.vue'
 
 type Pane = 'files' | 'brain' | 'skills' | 'activity'
@@ -9,6 +10,7 @@ const active = ref<Pane>('files')
 
 const appStore = useAppStore()
 const chat = useChatStore()
+const sessions = useSessionStore()
 
 const tabs: Array<{ id: Pane; label: string }> = [
   { id: 'files', label: 'Files' },
@@ -16,6 +18,49 @@ const tabs: Array<{ id: Pane; label: string }> = [
   { id: 'skills', label: 'Skills' },
   { id: 'activity', label: 'Activity' },
 ]
+
+// Brain tab state
+const brain = ref<{
+  agentId: string
+  agentName: string
+  role?: string
+  profile: string
+  sections: { id: string; name: string; description: string; entries: { id: string; text: string; createdAt: number }[] }[]
+  totalEntries: number
+} | null>(null)
+const expandedSections = ref<Set<string>>(new Set(['episodic']))
+const brainLoading = ref(false)
+
+async function loadBrain(): Promise<void> {
+  const agentId = sessions.activeId
+  if (!agentId) {
+    brain.value = null
+    return
+  }
+  brainLoading.value = true
+  try {
+    const api = window.piAtrium
+    if (!api) return
+    brain.value = await api.agents.brain(agentId)
+  } finally {
+    brainLoading.value = false
+  }
+}
+
+watch(
+  () => [active.value, sessions.activeId],
+  ([a, id]) => {
+    if (a === 'brain' && id) void loadBrain()
+  },
+  { immediate: true }
+)
+
+function toggleSection(id: string): void {
+  const next = new Set(expandedSections.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  expandedSections.value = next
+}
 
 // ----- Mock file tree (real vault scan is Wave 6) -----
 const fileTree: TreeNodeData[] = [
@@ -57,20 +102,6 @@ const fileTree: TreeNodeData[] = [
       { name: 'tsconfig.json', kind: 'file' },
     ],
   },
-]
-
-// ----- Mock brain sections (real brain is Wave 3) -----
-interface BrainSection {
-  id: string
-  name: string
-  description: string
-  count: number
-}
-const brainSections: BrainSection[] = [
-  { id: 'episodic', name: 'Episodic', description: 'Recent events, what happened', count: 0 },
-  { id: 'semantic', name: 'Semantic', description: 'Curated knowledge, facts', count: 0 },
-  { id: 'procedural', name: 'Procedural', description: 'Skills, routines, how-tos', count: 0 },
-  { id: 'working', name: 'Working', description: 'Current task context', count: 0 },
 ]
 
 // ----- Mock skills (real skill management is Wave 4) -----
@@ -160,19 +191,45 @@ const activity = computed(() => {
       <div v-show="active === 'brain'" class="tab-pane">
         <div class="pane-header">
           <span class="pane-title">Brain</span>
-          <span class="pane-subtitle">concierge</span>
+          <span class="pane-subtitle">
+            <template v-if="brain">{{ brain.agentName }} · {{ brain.totalEntries }} entries</template>
+            <template v-else>—</template>
+          </span>
         </div>
-        <div class="brain-list">
-          <div v-for="s in brainSections" :key="s.id" class="brain-card">
-            <div class="brain-card-head">
+        <div v-if="brainLoading" class="loading">Loading…</div>
+        <div v-else-if="!brain" class="empty-state">
+          No active session.
+        </div>
+        <div v-else class="brain-list">
+          <div class="brain-profile">
+            <div class="profile-label">Profile</div>
+            <div class="profile-text">{{ brain.profile }}</div>
+          </div>
+          <div
+            v-for="s in brain.sections"
+            :key="s.id"
+            class="brain-card"
+            :class="{ expanded: expandedSections.has(s.id) }"
+          >
+            <div class="brain-card-head" @click="toggleSection(s.id)">
               <span class="brain-name">{{ s.name }}</span>
-              <span class="brain-count">{{ s.count }} entries</span>
+              <span class="brain-count">{{ s.entries.length }} entr{{ s.entries.length === 1 ? 'y' : 'ies' }}</span>
             </div>
             <div class="brain-desc">{{ s.description }}</div>
+            <div v-if="expandedSections.has(s.id)" class="brain-entries">
+              <div v-if="s.entries.length === 0" class="empty-entries">No entries yet.</div>
+              <div
+                v-for="e in s.entries"
+                :key="e.id"
+                class="brain-entry"
+              >
+                <div class="entry-text">{{ e.text }}</div>
+                <div class="entry-meta">
+                  <span v-if="e.createdAt" class="mono">{{ new Date(e.createdAt).toLocaleString() }}</span>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="pane-footer">
-          <span>Real brain → Wave 3</span>
         </div>
       </div>
 
@@ -302,6 +359,26 @@ const activity = computed(() => {
 
 /* Brain tab */
 .brain-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+.brain-profile {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-bottom: 4px;
+}
+.profile-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-faint);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.profile-text {
+  font-size: 11px;
+  color: var(--text);
+  white-space: pre-wrap;
+}
 .brain-card {
   background: var(--bg);
   border: 1px solid var(--border);
@@ -313,7 +390,10 @@ const activity = computed(() => {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 4px;
+  cursor: pointer;
+  user-select: none;
 }
+.brain-card.expanded .brain-card-head { margin-bottom: 8px; }
 .brain-name {
   font-size: 12px;
   font-weight: 600;
@@ -325,6 +405,34 @@ const activity = computed(() => {
   font-family: 'JetBrains Mono', monospace;
 }
 .brain-desc { font-size: 11px; color: var(--text-faint); }
+.brain-entries {
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.empty-entries { font-size: 11px; color: var(--text-faint); font-style: italic; padding: 4px 0; }
+.brain-entry {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 6px 8px;
+}
+.entry-text {
+  font-size: 11px;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.entry-meta {
+  font-size: 9px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+.entry-meta .mono { font-family: 'JetBrains Mono', monospace; }
+.loading { padding: 24px; text-align: center; color: var(--text-faint); font-size: 12px; }
 
 /* Skills tab */
 .skills-list { padding: 8px 12px; }

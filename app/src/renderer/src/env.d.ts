@@ -13,6 +13,27 @@ interface ConciergeEvent {
   [k: string]: unknown
 }
 
+interface BrainEntry {
+  id: string
+  text: string
+  createdAt: number
+  source?: string
+}
+interface BrainSectionState {
+  id: 'episodic' | 'semantic' | 'procedural' | 'working'
+  name: string
+  description: string
+  entries: BrainEntry[]
+}
+interface BrainState {
+  agentId: string
+  agentName: string
+  role?: string
+  profile: string
+  sections: BrainSectionState[]
+  totalEntries: number
+}
+
 interface PiAtriumAPI {
   version: string
   concierge: {
@@ -44,6 +65,18 @@ interface PiAtriumAPI {
     start: (id: string) => Promise<{ ok: boolean }>
     halt: (id: string) => Promise<{ ok: boolean }>
     onUpdate: (cb: (teams: Team[]) => void) => () => void
+  }
+  agents: {
+    brain: (agentId: string) => Promise<BrainState | null>
+    remember: (
+      agentId: string,
+      section: 'episodic' | 'semantic' | 'procedural' | 'working',
+      text: string
+    ) => Promise<{ ok: boolean; entry?: BrainEntry; error?: string }>
+    recall: (
+      agentId: string,
+      query: string
+    ) => Promise<{ ok: boolean; matches: { section: string; text: string }[] }>
   }
 }
 

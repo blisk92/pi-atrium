@@ -19,7 +19,16 @@ import {
   nextMemberId,
   newTeamId,
 } from './teams.js'
+import {
+  ensureBrainScaffold,
+  readBrain,
+  addBrainEntry,
+  searchBrain,
+  type BrainState,
+} from './brain.js'
 import type { Team } from '../shared/types.js'
+// Note: readBrain/addBrainEntry/searchBrain are used by the Wave 3 IPC handlers
+void readBrain; void addBrainEntry; void searchBrain; void (null as unknown as BrainState)
 import http from 'node:http'
 import { spawnHeadlessPi, killHeadlessPi } from '../headless-pi/cli.js'
 
@@ -52,6 +61,8 @@ interface Session {
   isConcierge: boolean
   ttsEnabled: boolean
   readyAtMs?: number
+  /** Absolute path to the agent's on-disk directory (where brain/ lives). */
+  agentDir?: string
   errorMessage?: string
   sseReq: http.ClientRequest | null
   memory: MemoryEntry[]
@@ -126,6 +137,14 @@ async function setupSessionCwd(session: Session): Promise<string> {
   } catch (err) {
     console.warn(`[main] could not write SYSTEM.md for ${session.id}:`, (err as Error).message)
   }
+  // Wave 3: create the brain scaffold (4 sections + brain.md) on first spawn
+  try {
+    await ensureBrainScaffold(runtimePath, session.name, session.role)
+  } catch (err) {
+    console.warn(`[main] could not init brain for ${session.id}:`, (err as Error).message)
+  }
+  // Set the agentDir on the session so the renderer can read the brain
+  session.agentDir = runtimePath
   return runtimePath
 }
 
@@ -452,6 +471,14 @@ async function startTeamMembers(teamId: string): Promise<void> {
     team.members.map(async (m) => {
       try {
         const memberFolder = getMemberDir(teamId, m.id)
+        // Wave 3: ensure brain scaffold for team members (sessions are handled
+        // in setupSessionCwd; here we call it directly because member dirs
+        // were created by setupMemberDir without the brain).
+        try {
+          await ensureBrainScaffold(memberFolder, m.name, m.role)
+        } catch (err) {
+          console.warn(`[teams] could not init brain for ${m.id}:`, (err as Error).message)
+        }
         const port = findFreePort(PORT_RANGE_START + 1)
         const sessionId = `team-${teamId}-${m.id}`
 
@@ -465,6 +492,7 @@ async function startTeamMembers(teamId: string): Promise<void> {
           ttsEnabled: false,
           sseReq: null,
           memory: [],
+          agentDir: memberFolder,
         }
         sessions.set(sessionId, memberSession)
         memberSession.status = 'starting'
@@ -673,6 +701,48 @@ app.whenReady().then(async () => {
   ipcMain.handle('teams:halt', async (_evt, id: string) => {
     void haltTeamMembers(id)
     return { ok: true }
+  })
+
+  // --- Brain IPC (Wave 3) ---
+  ipcMain.handle('agents:brain', async (_evt, agentId: string) => {
+    const s = sessions.get(agentId)
+    if (!s) return null
+    if (!s.agentDir) {
+      // Lazily create the scaffold if missing (defensive)
+      const appPath = app.getAppPath()
+      const runtimeBase = app.isPackaged
+        ? path.join(app.getPath('userData'), 'sessions')
+        : path.join(appPath, '.runtime', 'sessions')
+      s.agentDir = path.join(runtimeBase, s.id)
+    }
+    try {
+      return await readBrain(s.agentDir!, s.id, s.name, s.role)
+    } catch (err) {
+      console.warn(`[main] readBrain failed for ${s.id}:`, (err as Error).message)
+      return null
+    }
+  })
+  ipcMain.handle('agents:brain:remember', async (_evt, agentId: string, section: string, text: string) => {
+    const s = sessions.get(agentId)
+    if (!s?.agentDir) return { ok: false, error: 'no agent dir' }
+    const valid = ['episodic', 'semantic', 'procedural', 'working']
+    if (!valid.includes(section)) return { ok: false, error: 'invalid section' }
+    try {
+      const entry = await addBrainEntry(s.agentDir, section as 'episodic', text, 'user')
+      return { ok: true, entry }
+    } catch (err) {
+      return { ok: false, error: (err as Error).message }
+    }
+  })
+  ipcMain.handle('agents:brain:recall', async (_evt, agentId: string, query: string) => {
+    const s = sessions.get(agentId)
+    if (!s?.agentDir) return { ok: false, matches: [] as string[] }
+    try {
+      const results = await searchBrain(s.agentDir, query)
+      return { ok: true, matches: results.map((r) => ({ section: r.section, text: r.entry.text })) }
+    } catch (err) {
+      return { ok: false, matches: [] as string[], error: (err as Error).message }
+    }
   })
 
   // --- Legacy single-concierge IPC (kept for back-compat) ---

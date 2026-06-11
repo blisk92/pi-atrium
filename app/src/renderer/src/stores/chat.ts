@@ -180,7 +180,7 @@ export const useChatStore = defineStore('chat', () => {
     if (!api) return { ok: false, error: 'no API bridge' }
 
     const s = ensure(id)
-    if (s.streamingId) return { ok: false, error: 'busy' }
+    const isBusy = !!s.streamingId
 
     s.messages.push({
       id: makeId('u'),
@@ -188,19 +188,27 @@ export const useChatStore = defineStore('chat', () => {
       content: trimmed,
       timestamp: Date.now(),
     })
-    const agentMsgId = makeId('a')
-    s.messages.push({
-      id: agentMsgId,
-      role: 'agent',
-      content: '',
-      timestamp: Date.now(),
-      streaming: true,
-    })
-    s.streamingId = agentMsgId
-    s.lastSendStartedAt = Date.now()
-    s.firstTokenAt = null
+    let agentMsgId: string | null = null
+    if (!isBusy) {
+      agentMsgId = makeId('a')
+      s.messages.push({
+        id: agentMsgId,
+        role: 'agent',
+        content: '',
+        timestamp: Date.now(),
+        streaming: true,
+      })
+      s.streamingId = agentMsgId
+      s.lastSendStartedAt = Date.now()
+      s.firstTokenAt = null
+    }
 
-    return api.sessions.send(id, trimmed)
+    // If the agent is busy, the next message is queued by the SDK via
+    // streamingBehavior: 'followUp' (waits for the current turn to
+    // finish, then processes this one). If not busy, we don't need the
+    // option. Either way, the user message is in the timeline.
+    const opts = isBusy ? { streamingBehavior: 'followUp' as const } : undefined
+    return api.sessions.send(id, trimmed, opts)
   }
 
   function abort(): void {

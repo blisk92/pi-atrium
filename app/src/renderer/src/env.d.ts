@@ -49,7 +49,7 @@ interface PiAtriumAPI {
     spawn: (name?: string) => Promise<SessionSnapshot>
     stop: (id: string) => Promise<{ ok: boolean }>
     setTts: (id: string, enabled: boolean) => Promise<{ ok: boolean; error?: string }>
-    send: (id: string, text: string) => Promise<{ ok: boolean; status?: number; error?: string }>
+    send: (id: string, text: string, opts?: { streamingBehavior?: 'steer' | 'followUp' }) => Promise<{ ok: boolean; status?: number; error?: string }>
     abort: (id: string) => Promise<{ ok: boolean; error?: string }>
     remember: (id: string, text: string) => Promise<{ ok: boolean; count?: number; error?: string }>
     recall: (id: string, query: string) => Promise<{ ok: boolean; matches: string[]; error?: string }>

@@ -838,7 +838,7 @@ app.whenReady().then(async () => {
     broadcastSessions()
     return { ok: true }
   })
-  ipcMain.handle('sessions:send', async (_evt, id: string, text: string) => {
+  ipcMain.handle('sessions:send', async (_evt, id: string, text: string, opts?: { streamingBehavior?: 'steer' | 'followUp' }) => {
     const s = sessions.get(id)
     if (!s) return { ok: false, error: 'no such session' }
     if (s.status !== 'active') return { ok: false, error: 'not active' }
@@ -846,7 +846,7 @@ app.whenReady().then(async () => {
       const res = await fetch(`http://127.0.0.1:${s.port}/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, streamingBehavior: opts?.streamingBehavior }),
       })
       return { ok: res.ok, status: res.status }
     } catch (err) {

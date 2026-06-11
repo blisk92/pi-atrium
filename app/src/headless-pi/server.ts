@@ -166,11 +166,18 @@ async function main(): Promise<void> {
 
     if (req.method === 'POST' && url.pathname === '/message') {
       try {
-        const body = await readJson<{ text?: string }>(req)
+        const body = await readJson<{ text?: string; streamingBehavior?: 'steer' | 'followUp' }>(req)
         const text = (body.text || '').trim()
         if (!text) return jsonResponse(res, 400, { error: 'text required' })
-        // Fire and forget — events stream via SSE
-        session.prompt(text).catch((err: Error) => {
+        // Fire and forget — events stream via SSE.
+        // streamingBehavior:
+        //   'steer'    — redirect the current response mid-flight
+        //   'followUp' — wait for the current turn to finish, then process this
+        // Default to 'followUp' so that sending a message while the agent is
+        // busy queues it instead of erroring out.
+        const streamingBehavior: 'steer' | 'followUp' =
+          body.streamingBehavior === 'steer' ? 'steer' : 'followUp'
+        session.prompt(text, { streamingBehavior }).catch((err: Error) => {
           broadcast({ type: 'prompt_error', message: err.message })
         })
         return jsonResponse(res, 202, { ok: true, queued: true })

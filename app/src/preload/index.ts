@@ -79,8 +79,8 @@ const api = {
     stop: (id: string): Promise<{ ok: boolean }> => ipcRenderer.invoke('sessions:stop', id),
     setTts: (id: string, enabled: boolean): Promise<{ ok: boolean; error?: string }> =>
       ipcRenderer.invoke('sessions:setTts', id, enabled),
-    send: (id: string, text: string): Promise<{ ok: boolean; status?: number; error?: string }> =>
-      ipcRenderer.invoke('sessions:send', id, text),
+    send: (id: string, text: string, opts?: { streamingBehavior?: 'steer' | 'followUp' }): Promise<{ ok: boolean; status?: number; error?: string }> =>
+      ipcRenderer.invoke('sessions:send', id, text, opts),
     abort: (id: string): Promise<{ ok: boolean; error?: string }> =>
       ipcRenderer.invoke('sessions:abort', id),
     remember: (id: string, text: string): Promise<{ ok: boolean; count?: number; error?: string }> =>

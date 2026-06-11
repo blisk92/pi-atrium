@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pi Atrium — Design System · Live Examples</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../prototype/shared.css">
+<style>
+  /* Page-specific */
+  body { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  h1 + p { color: var(--text-dim); margin-bottom: 32px; }
+  h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 32px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .example-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+  .example-stack > * { margin-bottom: 12px; }
+  .lbl {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--text-faint); margin-bottom: 6px;
+  }
+  /* Color swatches */
+  .swatch-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+  .swatch { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .swatch-color { height: 60px; }
+  .swatch-info { padding: 8px 10px; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+  .swatch-name { color: var(--text); margin-bottom: 2px; }
+  .swatch-hex { color: var(--text-faint); }
+  /* Type scale */
+  .type-sample { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .type-sample:last-child { border-bottom: none; }
+  .type-sample .name { font-size: 11px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; }
+  /* Spacing demo */
+  .spacing-demo { display: flex; align-items: flex-end; gap: 16px; }
+  .spacing-block { background: var(--accent); }
+  .spacing-label { font-size: 10px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; margin-top: 4px; }
+  /* File tree demo */
+  .ft-body { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .ft-node { display: flex; align-items: center; gap: 6px; padding: 3px 0; color: var(--text-dim); }
+  .ft-node.dir { color: var(--text); }
+  .ft-node .indent-1 { padding-left: 24px; }
+  .ft-node .indent-2 { padding-left: 48px; }
+  .ft-node svg { flex-shrink: 0; opacity: 0.7; }
+  /* Lifecycle timeline */
+  .lifecycle-timeline { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; }
+  .lifecycle-step { background: var(--surface); padding: 12px 16px; text-align: center; }
+  .lifecycle-step.active { background: var(--accent-soft); }
+  .lifecycle-step .num { font-size: 10px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; }
+  .lifecycle-step .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .lifecycle-step.active .label { color: var(--accent); }
+  /* TTS toggle */
+  .tts-toggle { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .tts-toggle.on { background: var(--accent-soft); color: var(--accent); }
+  .tts-toggle.off { background: rgba(148, 163, 184, 0.15); color: var(--text-faint); }
+  /* Waveform */
+  .waveform { display: flex; align-items: center; gap: 2px; height: 24px; }
+  .waveform-bar { width: 3px; background: var(--error); border-radius: 2px; animation: wave 0.8s ease-in-out infinite; }
+  .waveform-bar:nth-child(1) { height: 30%; animation-delay: 0s; }
+  .waveform-bar:nth-child(2) { height: 60%; animation-delay: 0.1s; }
+  .waveform-bar:nth-child(3) { height: 90%; animation-delay: 0.2s; }
+  .waveform-bar:nth-child(4) { height: 70%; animation-delay: 0.3s; }
+  .waveform-bar:nth-child(5) { height: 50%; animation-delay: 0.4s; }
+  .waveform-bar:nth-child(6) { height: 80%; animation-delay: 0.5s; }
+  .waveform-bar:nth-child(7) { height: 40%; animation-delay: 0.6s; }
+  .waveform-bar:nth-child(8) { height: 60%; animation-delay: 0.7s; }
+  @keyframes wave { 0%, 100% { transform: scaleY(0.5); } 50% { transform: scaleY(1); } }
+  /* Empty state */
+  .empty-demo { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; text-align: center; }
+  /* Status banner */
+  .status-banner { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius); padding: 16px 20px; display: flex; align-items: center; gap: 16px; }
+  .status-banner.error { border-left-color: var(--error); }
+  .status-banner .icon { width: 40px; height: 40px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; flex-shrink: 0; }
+  .status-banner.error .icon { background: rgba(239, 68, 68, 0.12); color: var(--error); }
+  .status-banner .info h3 { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .status-banner .info p { font-size: 12px; color: var(--text-dim); }
+  /* Skill chip */
+  .skill-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: var(--surface-2); border-radius: 10px; font-size: 10px; font-family: 'JetBrains Mono', monospace; color: var(--text-dim); }
+  /* Choice card */
+  .choice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .choice { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .choice.active { border-color: var(--accent); background: var(--accent-soft); }
+  .choice-icon { width: 40px; height: 40px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); display: grid; place-items: center; color: var(--accent); margin-bottom: 12px; }
+  .choice h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .choice p { font-size: 12px; color: var(--text-faint); }
+  .choice .badge { font-size: 10px; color: var(--accent); margin-top: 8px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+  /* Toggle */
+  .toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; }
+  .toggle input { display: none; }
+  .toggle .switch { width: 36px; height: 20px; background: var(--surface-2); border-radius: 10px; position: relative; transition: background var(--transition); }
+  .toggle .switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: var(--text-dim); border-radius: 50%; transition: all var(--transition); }
+  .toggle input:checked + .switch { background: var(--accent); }
+  .toggle input:checked + .switch::after { left: 18px; background: var(--bg); }
+  /* Icon button */
+  .icon-btn { width: 32px; height: 32px; background: transparent; border: 1px solid transparent; border-radius: var(--radius); color: var(--text-dim); cursor: pointer; display: grid; place-items: center; transition: all var(--transition); }
+  .icon-btn:hover { background: var(--surface-2); color: var(--text); }
+  .icon-btn.active { color: var(--accent); border-color: var(--accent); }
+  /* Demo wrapper for compact display */
+  .demo-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  /* Note for monospace */
+  .note { font-size: 11px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; margin-top: 4px; }
+  /* Input */
+  input[type="text"] { width: 100%; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-family: inherit; font-size: 14px; }
+  input[type="text"]:focus { outline: none; border-color: var(--accent); }
+  /* Form */
+  .form-row { margin-bottom: 16px; }
+  .form-row label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); margin-bottom: 6px; }
+  .form-row .hint { font-size: 11px; color: var(--text-faint); margin-top: 4px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+</style>
+</head>
+<body>
+
+<h1>Pi Atrium — Design System</h1>
+<p>Live examples of every token and component. Use the sidebar to jump to a section.</p>
+
+<nav style="position: sticky; top: 0; background: var(--bg); padding: 12px 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; font-size: 12px; font-family: 'JetBrains Mono', monospace;">
+  <a href="#colors" style="margin-right: 12px; color: var(--text-dim);">colors</a>
+  <a href="#typography" style="margin-right: 12px; color: var(--text-dim);">typography</a>
+  <a href="#spacing" style="margin-right: 12px; color: var(--text-dim);">spacing</a>
+  <a href="#buttons" style="margin-right: 12px; color: var(--text-dim);">buttons</a>
+  <a href="#cards" style="margin-right: 12px; color: var(--text-dim);">cards</a>
+  <a href="#forms" style="margin-right: 12px; color: var(--text-dim);">forms</a>
+  <a href="#pills" style="margin-right: 12px; color: var(--text-dim);">pills</a>
+  <a href="#tabs" style="margin-right: 12px; color: var(--text-dim);">tabs</a>
+  <a href="#table" style="margin-right: 12px; color: var(--text-dim);">table</a>
+  <a href="#lifecycle" style="margin-right: 12px; color: var(--text-dim);">lifecycle</a>
+  <a href="#banners" style="margin-right: 12px; color: var(--text-dim);">banners</a>
+  <a href="#status" style="margin-right: 12px; color: var(--text-dim);">status</a>
+  <a href="#empty" style="margin-right: 12px; color: var(--text-dim);">empty</a>
+  <a href="#voice" style="margin-right: 12px; color: var(--text-dim);">voice</a>
+  <a href="#filetree" style="margin-right: 12px; color: var(--text-dim);">file tree</a>
+  <a href="#choice" style="margin-right: 12px; color: var(--text-dim);">choice</a>
+  <a href="../prototype/index.html" style="margin-left: auto; color: var(--text-faint);">← prototype hub</a>
+</nav>
+
+<!-- ==================== COLORS ==================== -->
+<h2 id="colors">Colors</h2>
+<div class="lbl">Surface</div>
+<div class="swatch-grid" style="margin-bottom: 24px;">
+  <div class="swatch"><div class="swatch-color" style="background: #0F172A;"></div><div class="swatch-info"><div class="swatch-name">--bg</div><div class="swatch-hex">#0F172A</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background: #1E293B;"></div><div class="swatch-info"><div class="swatch-name">--surface</div><div class="swatch-hex">#1E293B</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background: #334155;"></div><div class="swatch-info"><div class="swatch-name">--surface-2</div><div class="swatch-hex">#334155</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background: #F8FAFC;"></div><div class="swatch-info"><div class="swatch-name">--text</div><div class="swatch-hex">#F8FAFC</div></div></div>
+</div>
+<div class="lbl">Accent + Status</div>
+<div class="swatch-grid" style="margin-bottom: 24px;">
+  <div class="swatch"><div class="swatch-color" style="background: #22C55E;"></div><div class="swatch-info"><div class="swatch-name">--accent</div><div class="swatch-hex">#22C55E</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background: #38BDF8;"></div><div class="swatch-info"><div class="swatch-name">--info</div><div class="swatch-hex">#38BDF8</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background: #F59E0B;"></div><div class="swatch-info"><div class="swatch-name">--warn</div><div class="swatch-hex">#F59E0B</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background: #EF4444;"></div><div class="swatch-info"><div class="swatch-name">--error</div><div class="swatch-hex">#EF4444</div></div></div>
+</div>
+
+<!-- ==================== TYPOGRAPHY ==================== -->
+<h2 id="typography">Typography</h2>
+<div class="type-sample">
+  <div class="name">H1 · 28px / 700</div>
+  <div style="font-size: 28px; font-weight: 700;">Page title</div>
+</div>
+<div class="type-sample">
+  <div class="name">H2 · 20px / 600</div>
+  <div style="font-size: 20px; font-weight: 600;">Section title</div>
+</div>
+<div class="type-sample">
+  <div class="name">H3 · 16px / 600</div>
+  <div style="font-size: 16px; font-weight: 600;">Subsection</div>
+</div>
+<div class="type-sample">
+  <div class="name">Body · 14px / 400</div>
+  <div>Default body text. Quick brown fox jumps over the lazy dog.</div>
+</div>
+<div class="type-sample">
+  <div class="name">Small · 12px / 400</div>
+  <div style="font-size: 12px; color: var(--text-dim);">Metadata, hints, secondary text.</div>
+</div>
+<div class="type-sample">
+  <div class="name">Label · 11px / 600 · uppercase</div>
+  <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-faint);">Section label</div>
+</div>
+<div class="type-sample">
+  <div class="name">Mono · 12px / JetBrains Mono</div>
+  <div class="mono" style="color: var(--text);">C:\Users\edmon\pi-agents\agent-001\.pi\SYSTEM.md</div>
+</div>
+
+<!-- ==================== SPACING ==================== -->
+<h2 id="spacing">Spacing</h2>
+<div class="lbl">4px base unit</div>
+<div class="spacing-demo">
+  <div><div class="spacing-block" style="width: 4px; height: 32px;"></div><div class="spacing-label">4</div></div>
+  <div><div class="spacing-block" style="width: 8px; height: 32px;"></div><div class="spacing-label">8</div></div>
+  <div><div class="spacing-block" style="width: 12px; height: 32px;"></div><div class="spacing-label">12</div></div>
+  <div><div class="spacing-block" style="width: 16px; height: 32px;"></div><div class="spacing-label">16</div></div>
+  <div><div class="spacing-block" style="width: 24px; height: 32px;"></div><div class="spacing-label">24</div></div>
+  <div><div class="spacing-block" style="width: 32px; height: 32px;"></div><div class="spacing-label">32</div></div>
+  <div><div class="spacing-block" style="width: 56px; height: 32px;"></div><div class="spacing-label">56</div></div>
+</div>
+
+<!-- ==================== BUTTONS ==================== -->
+<h2 id="buttons">Buttons</h2>
+<div class="lbl">Variants</div>
+<div class="demo-row" style="margin-bottom: 24px;">
+  <button class="btn">Default</button>
+  <button class="btn btn-primary">Primary</button>
+  <button class="btn btn-danger">Destructive</button>
+  <button class="btn btn-ghost">+ Ghost</button>
+  <button class="btn btn-sm">Small</button>
+</div>
+<div class="lbl">Icon button (topbar actions)</div>
+<div class="demo-row" style="margin-bottom: 24px;">
+  <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>
+  <button class="icon-btn active"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>
+  <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+</div>
+
+<!-- ==================== CARDS ==================== -->
+<h2 id="cards">Cards</h2>
+<div class="card" style="max-width: 480px;">
+  <div class="card-title">
+    Section title
+    <span class="sub">subtitle</span>
+  </div>
+  <p style="color: var(--text-dim); font-size: 13px;">Card body content. Use for grouping related form fields, content blocks, and settings sections.</p>
+</div>
+
+<!-- ==================== FORMS ==================== -->
+<h2 id="forms">Form fields</h2>
+<div class="card" style="max-width: 600px;">
+  <div class="card-title">Form example</div>
+  <div class="form-grid">
+    <div class="form-row">
+      <label>Name</label>
+      <input type="text" value="Q3 Feasibility" />
+    </div>
+    <div class="form-row">
+      <label>Model</label>
+      <input type="text" value="minimax (M3)" />
+    </div>
+  </div>
+  <div class="form-row">
+    <label>Description</label>
+    <input type="text" value="Pre-shoot feasibility study" />
+    <div class="hint">A short description of the team's purpose.</div>
+  </div>
+  <div class="form-row">
+    <label>Settings</label>
+    <label class="toggle">
+      <input type="checkbox" checked />
+      <span class="switch"></span>
+      <span>Auto-save on changes</span>
+    </label>
+  </div>
+</div>
+
+<!-- ==================== PILLS ==================== -->
+<h2 id="pills">Status pills</h2>
+<div class="lbl">Lifecycle states</div>
+<div class="demo-row" style="margin-bottom: 16px;">
+  <span class="pill pill-draft">Draft</span>
+  <span class="pill pill-active"><span class="dot"></span> Active</span>
+  <span class="pill pill-starting"><span class="dot"></span> Starting…</span>
+  <span class="pill pill-stopping"><span class="dot"></span> Stopping</span>
+  <span class="pill pill-stopped">Stopped</span>
+  <span class="pill pill-error">Failed</span>
+</div>
+<div class="lbl">Skill status</div>
+<div class="demo-row" style="margin-bottom: 16px;">
+  <span class="skill-chip">obsidian-read</span>
+  <span class="skill-chip">pi-intercom</span>
+  <span class="skill-chip">app-context</span>
+</div>
+<div class="lbl">TTS toggle (sidebar)</div>
+<div class="demo-row">
+  <span class="tts-toggle on">🔊 on</span>
+  <span class="tts-toggle off">🔇 off</span>
+</div>
+
+<!-- ==================== TABS ==================== -->
+<h2 id="tabs">Tabs</h2>
+<div class="lbl">Middle pane tabs (horizontal)</div>
+<div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 24px;">
+  <div style="display: flex; border-bottom: 1px solid var(--border);">
+    <button style="background: var(--bg); color: var(--text); border: none; border-bottom: 2px solid var(--accent); padding: 8px 12px; font-size: 12px; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Chat
+    </button>
+    <button style="background: transparent; color: var(--text-dim); border: none; padding: 8px 12px; font-size: 12px; display: flex; align-items: center; gap: 6px; cursor: pointer; border-right: 1px solid var(--border);">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      feasibility.md
+      <span style="color: var(--text-faint); margin-left: 2px;">×</span>
+    </button>
+  </div>
+</div>
+<div class="lbl">Right pane tabs (vertical, uppercase)</div>
+<div style="display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; max-width: 280px;">
+  <button style="flex: 1; padding: 10px 6px; background: transparent; border: none; border-bottom: 2px solid transparent; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-faint); cursor: pointer;">Files</button>
+  <button style="flex: 1; padding: 10px 6px; background: transparent; border: none; border-bottom: 2px solid var(--accent); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text); cursor: pointer;">Brain<span style="background: var(--error); color: var(--bg); font-size: 8px; padding: 0 4px; border-radius: 6px; margin-left: 4px;">3</span></button>
+  <button style="flex: 1; padding: 10px 6px; background: transparent; border: none; border-bottom: 2px solid transparent; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-faint); cursor: pointer;">Skills</button>
+  <button style="flex: 1; padding: 10px 6px; background: transparent; border: none; border-bottom: 2px solid transparent; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-faint); cursor: pointer;">Activity</button>
+</div>
+
+<!-- ==================== TABLE ==================== -->
+<h2 id="table">Table</h2>
+<table class="tbl" style="margin-bottom: 24px;">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Path</th>
+      <th>Last opened</th>
+      <th>Notes</th>
+      <th class="action-col">Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>SecondBrain</strong></td>
+      <td class="mono path-cell">C:\Users\edmon\Documents\ObsidianVault\SecondBrain\</td>
+      <td>2 min ago</td>
+      <td class="mono">1,247</td>
+      <td class="action-col"><button class="btn btn-sm">Select</button></td>
+    </tr>
+    <tr>
+      <td>Work Notes</td>
+      <td class="mono path-cell">C:\Users\edmon\Documents\ObsidianVault\Work\</td>
+      <td>3 days ago</td>
+      <td class="mono">312</td>
+      <td class="action-col"><button class="btn btn-sm">Select</button></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ==================== LIFECYCLE ==================== -->
+<h2 id="lifecycle">Lifecycle</h2>
+<div class="lifecycle-timeline">
+  <div class="lifecycle-step"><div class="num">1</div><div class="label">Draft</div></div>
+  <div class="lifecycle-step active"><div class="num">2</div><div class="label">● Starting</div></div>
+  <div class="lifecycle-step"><div class="num">3</div><div class="label">Active</div></div>
+  <div class="lifecycle-step"><div class="num">4</div><div class="label">Stopping</div></div>
+  <div class="lifecycle-step"><div class="num">5</div><div class="label">Stopped</div></div>
+</div>
+
+<!-- ==================== BANNERS ==================== -->
+<h2 id="banners">Status banners</h2>
+<div class="status-banner" style="margin-bottom: 12px;">
+  <div class="icon">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+  <div class="info">
+    <h3>Active state</h3>
+    <p>Team is running, all agents active</p>
+  </div>
+</div>
+<div class="status-banner error">
+  <div class="icon">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+  </div>
+  <div class="info">
+    <h3>Error state</h3>
+    <p>Something went wrong — retry or check logs</p>
+  </div>
+</div>
+
+<!-- ==================== STATUS ==================== -->
+<h2 id="status">Status dots</h2>
+<div class="demo-row" style="margin-bottom: 16px;">
+  <div style="display: flex; align-items: center; gap: 8px;"><span class="status-dot" style="width: 10px; height: 10px; background: var(--text-faint); border-radius: 50%;"></span> Idle</div>
+  <div style="display: flex; align-items: center; gap: 8px;"><span class="status-dot thinking" style="width: 10px; height: 10px; background: var(--info); border-radius: 50%;"></span> Thinking</div>
+  <div style="display: flex; align-items: center; gap: 8px;"><span class="status-dot" style="width: 10px; height: 10px; background: var(--warn); border-radius: 50%;"></span> Tool use</div>
+  <div style="display: flex; align-items: center; gap: 8px;"><span class="status-dot attention" style="width: 10px; height: 10px; background: var(--accent); border-radius: 50%;"></span> Attention</div>
+  <div style="display: flex; align-items: center; gap: 8px;"><span class="status-dot" style="width: 10px; height: 10px; background: var(--error); border-radius: 50%;"></span> Error</div>
+</div>
+
+<!-- ==================== EMPTY ==================== -->
+<h2 id="empty">Empty state</h2>
+<div class="empty-demo">
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.4; margin-bottom: 12px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+  <h3 style="font-size: 16px; color: var(--text-dim); margin-bottom: 6px;">No teams yet</h3>
+  <p style="font-size: 13px; color: var(--text-faint); max-width: 360px; margin: 0 auto 16px;">Create your first team to get started. Teams let you run multiple agents on the same project.</p>
+  <button class="btn btn-primary">+ New Team</button>
+</div>
+
+<!-- ==================== VOICE ==================== -->
+<h2 id="voice">Voice UI</h2>
+<div class="lbl">PTT active</div>
+<div style="background: var(--error); color: var(--bg); padding: 14px 16px; border-radius: var(--radius); display: flex; align-items: center; gap: 12px; margin-bottom: 24px; box-shadow: 0 0 16px rgba(239, 68, 68, 0.3); border: 1px solid var(--error);">
+  <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--bg); animation: pulse 1s ease-in-out infinite;"></span>
+  <div class="waveform">
+    <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+    <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+  </div>
+  <div style="font-size: 12px; font-weight: 600; flex: 1; color: var(--bg);">RECORDING — 0:04 / 60s</div>
+  <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 2px 6px; background: var(--bg); color: var(--error); border-radius: 3px;">Ctrl+Space</span>
+</div>
+<div class="lbl">TTS playing</div>
+<div style="background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--radius); padding: 8px 12px; display: inline-flex; align-items: center; gap: 8px; font-size: 11px; color: var(--accent); font-weight: 600; margin-bottom: 24px;">
+  <div style="display: inline-flex; gap: 2px; align-items: center; height: 12px;">
+    <span style="width: 2px; height: 100%; background: var(--accent); animation: wave 0.6s ease-in-out infinite;"></span>
+    <span style="width: 2px; height: 100%; background: var(--accent); animation: wave 0.6s ease-in-out infinite; animation-delay: 0.1s;"></span>
+    <span style="width: 2px; height: 100%; background: var(--accent); animation: wave 0.6s ease-in-out infinite; animation-delay: 0.2s;"></span>
+    <span style="width: 2px; height: 100%; background: var(--accent); animation: wave 0.6s ease-in-out infinite; animation-delay: 0.3s;"></span>
+  </div>
+  SPEAKING · 0:03 / 0:05 · Concierge
+</div>
+
+<!-- ==================== FILE TREE ==================== -->
+<h2 id="filetree">File tree</h2>
+<div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; max-width: 360px;">
+  <div class="ft-body">
+    <div class="ft-node dir"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Projects/Q3 Shoot</div>
+    <div class="ft-node dir indent-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> notes</div>
+    <div class="ft-node indent-2" style="color: var(--accent);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> feasibility.md (open)</div>
+    <div class="ft-node dir indent-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> references</div>
+    <div class="ft-node indent-2"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> style-brief.md</div>
+  </div>
+</div>
+
+<!-- ==================== CHOICE ==================== -->
+<h2 id="choice">Choice cards</h2>
+<div class="choice-grid" style="max-width: 720px;">
+  <div class="choice">
+    <div class="choice-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+    <h3>Link existing</h3>
+    <p>Point to a vault you already use.</p>
+  </div>
+  <div class="choice active">
+    <div class="choice-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
+    <h3>Create new</h3>
+    <p>Pi Atrium creates a fresh vault.</p>
+    <div class="badge">● recommended</div>
+  </div>
+  <div class="choice">
+    <div class="choice-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <h3>Auto-detect</h3>
+    <p>Scan common locations for vaults.</p>
+  </div>
+</div>
+
+</body>
+</html>
